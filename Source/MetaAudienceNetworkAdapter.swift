@@ -11,11 +11,7 @@ import UIKit
 import FBAudienceNetwork
 
 /// The Helium Meta Audience Network adapter
-final class MetaAudienceNetworkAdapter: NSObject, PartnerAdapter, FBAdViewDelegate,
-                                        FBInterstitialAdDelegate, FBRewardedVideoAdDelegate {
-    override init() {
-    }
-    
+final class MetaAudienceNetworkAdapter: PartnerAdapter {
     /// Get the version of the Meta Audience Network SDK.
     let partnerSDKVersion = FB_AD_SDK_VERSION
     
@@ -34,29 +30,19 @@ final class MetaAudienceNetworkAdapter: NSObject, PartnerAdapter, FBAdViewDelega
     /// CCPA signal representing limited data usage in the case consent has not been given.
     let limitedDataUsageVal = "LDU"
     
-    /// Dictionary of PartnerAdDelegate's keyed by the Helium placement name.
-    var delegates: [String: PartnerAdDelegate] = [:]
+    /// Storage of adapter instances.  Keyed by the request identifier.
+    var adapters: [String: Adapter] = [:]
     
     /// Override this method to initialize the Meta Audience Network SDK so that it's ready to request and display ads.
     /// - Parameters:
     ///   - configuration: The necessary initialization data provided by Helium.
     ///   - completion: Handler to notify Helium of task completion.
-    func setUp(with configuration: PartnerConfiguration,
-               completion: @escaping (Error?) -> Void) {
+    func setUp(with configuration: PartnerConfiguration, completion: @escaping (Error?) -> Void) {
         log(.setUpStarted)
         let settings = FBAdInitSettings(placementIDs: [String](), mediationService: "Helium")
         
         FBAudienceNetworkAds.initialize(with: settings) { result in
-            if (result.isSuccess) {
-                self.log(.setUpSucceded)
-                completion(nil)
-            } else {
-                let error = self.error(.setUpFailure,
-                                       description: "\(self.partnerDisplayName) SDK failed to finish initialization: \(result.message)",
-                                       error: nil)
-                self.log(.setUpFailed(partnerError: error))
-                completion(error)
-            }
+            self.onSetUpComplete(result: result, completion: completion)
         }
     }
     
@@ -69,9 +55,7 @@ final class MetaAudienceNetworkAdapter: NSObject, PartnerAdapter, FBAdViewDelega
         
         let bidderToken = FBAdSettings.bidderToken
         if (bidderToken.isEmpty) {
-            log(.fetchBidderInfoFailed(request, partnerError: error(.noBidPayload(placement: request.heliumPlacement),
-                                                                    description: "\(partnerDisplayName) failed to compute a bidding token",
-                                                                    error: nil)))
+            log(.fetchBidderInfoFailed(request, error: error(.noBidPayload(placement: request.heliumPlacement), description: "Bidding token is empty.")))
         } else {
             log(.fetchBidderInfoSucceeded(request))
         }
@@ -120,45 +104,11 @@ final class MetaAudienceNetworkAdapter: NSObject, PartnerAdapter, FBAdViewDelega
               completion: @escaping (Result<PartnerAd, Error>) -> Void) {
         log(.loadStarted(request))
         
-        switch request.format {
-        case .banner:
-            loadBannerAd(request: request,
-                         partnerAdDelegate: partnerAdDelegate,
-                         viewController: viewController,
-                         completion: { result in
-                do {
-                    self.log(.loadSucceeded(try result.get()))
-                } catch {
-                    self.log(.loadFailed(request, partnerError: error))
-                }
-                
-                completion(result)
-            })
-        case .interstitial:
-            loadInterstitialAd(request: request,
-                               partnerAdDelegate: partnerAdDelegate,
-                               completion: { result in
-                do {
-                    self.log(.loadSucceeded(try result.get()))
-                } catch {
-                    self.log(.loadFailed(request, partnerError: error))
-                }
-                
-                completion(result)
-            })
-        case .rewarded:
-            loadRewardedAd(request: request,
-                           partnerAdDelegate: partnerAdDelegate,
-                           completion: { result in
-                do {
-                    self.log(.loadSucceeded(try result.get()))
-                } catch {
-                    self.log(.loadFailed(request, partnerError: error))
-                }
-                
-                completion(result)
-            })
-        }
+        /// Create and persist a new adapter instance
+        let adapter = Adapter(adapter: self, request: request, partnerAdDelegate: partnerAdDelegate)
+        adapter.load(viewController: viewController, completion: completion)
+        
+        adapters[request.identifier] = adapter
     }
     
     /// Override this method to show the currently loaded ad.
@@ -171,35 +121,14 @@ final class MetaAudienceNetworkAdapter: NSObject, PartnerAdapter, FBAdViewDelega
               completion: @escaping (Result<PartnerAd, Error>) -> Void) {
         log(.showStarted(partnerAd))
         
-        switch partnerAd.request.format {
-        case .banner:
-            /// Banner does not have a separate show mechanism
-            log(.showSucceeded(partnerAd))
-            completion(.success(partnerAd))
-        case .interstitial:
-            showInterstitialAd(partnerAd: partnerAd,
-                               viewController: viewController,
-                               completion: { result in
-                do {
-                    self.log(.showSucceeded(try result.get()))
-                } catch {
-                    self.log(.showFailed(partnerAd, partnerError: error))
-                }
-                
-                completion(result)
-            })
-        case .rewarded:
-            showRewardedAd(partnerAd: partnerAd,
-                           viewController: viewController,
-                           completion: { result in
-                do {
-                    self.log(.showSucceeded(try result.get()))
-                } catch {
-                    self.log(.showFailed(partnerAd, partnerError: error))
-                }
-                
-                completion(result)
-            })
+        /// Retrieve the adapter instance to show the ad
+        if let adapter = adapters[partnerAd.request.identifier] {
+            adapter.show(viewController: viewController, completion: completion)
+        } else {
+            let error = error(.noAdReadyToShow(placement: partnerAd.request.partnerPlacement), description: "No adapter found.")
+            log(.showFailed(partnerAd, error: error))
+            
+            completion(.failure(error))
         }
     }
     
@@ -210,37 +139,31 @@ final class MetaAudienceNetworkAdapter: NSObject, PartnerAdapter, FBAdViewDelega
     func invalidate(_ partnerAd: PartnerAd, completion: @escaping (Result<PartnerAd, Error>) -> Void) {
         log(.invalidateStarted(partnerAd))
         
-        switch partnerAd.request.format {
-        case .banner:
-            destroyBannerAd(partnerAd: partnerAd) { result in
-                do {
-                    self.log(.invalidateSucceeded(try result.get()))
-                } catch {
-                    self.log(.invalidateFailed(partnerAd, partnerError: error))
-                }
-                
-                completion(result)
-            }
-        case .interstitial:
-            destroyInterstitialAd(partnerAd: partnerAd) { result in
-                do {
-                    self.log(.invalidateSucceeded(try result.get()))
-                } catch {
-                    self.log(.invalidateFailed(partnerAd, partnerError: error))
-                }
-                
-                completion(result)
-            }
-        case .rewarded:
-            destroyRewardedAd(partnerAd: partnerAd) { result in
-                do {
-                    self.log(.invalidateSucceeded(try result.get()))
-                } catch {
-                    self.log(.invalidateFailed(partnerAd, partnerError: error))
-                }
-                
-                completion(result)
-            }
+        /// Retrieve the adapter instance to invalidate the ad
+        if let adapter = adapters[partnerAd.request.identifier] {
+            adapter.invalidate(completion: completion)
+            adapters.removeValue(forKey: partnerAd.request.identifier)
+        } else {
+            let error = error(.invalidateFailure(placement: partnerAd.request.partnerPlacement), description: "No adapter found.")
+            log(.invalidateFailed(partnerAd, error: error))
+            
+            completion(.failure(error))
+        }
+    }
+    
+    /// Handle partner setup completion
+    /// - Parameters:
+    ///   - result: The Meta Audience Network initialization result.
+    ///   - completion: Handler to notify Helium of task completion.
+    private func onSetUpComplete(result: FBAdInitResults, completion: @escaping (Error?) -> Void) {
+        if (result.isSuccess) {
+            self.log(.setUpSucceded)
+            completion(nil)
+        } else {
+            let error = self.error(.setUpFailure, description: result.message)
+            self.log(.setUpFailed(error))
+            
+            completion(error)
         }
     }
 }
