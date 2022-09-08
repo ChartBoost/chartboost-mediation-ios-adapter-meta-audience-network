@@ -31,7 +31,7 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
     let limitedDataUsageVal = "LDU"
     
     /// Storage of adapter instances.  Keyed by the request identifier.
-    var adapters: [String: Adapter] = [:]
+    var adapters: [String: MetaAudienceNetworkAdAdapter] = [:]
     
     /// Override this method to initialize the Meta Audience Network SDK so that it's ready to request and display ads.
     /// - Parameters:
@@ -39,10 +39,18 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
     ///   - completion: Handler to notify Helium of task completion.
     func setUp(with configuration: PartnerConfiguration, completion: @escaping (Error?) -> Void) {
         log(.setUpStarted)
-        let settings = FBAdInitSettings(placementIDs: [String](), mediationService: "Helium")
+        let settings = FBAdInitSettings(placementIDs: [], mediationService: "Helium")
         
         FBAudienceNetworkAds.initialize(with: settings) { result in
-            self.onSetUpComplete(result: result, completion: completion)
+            if (result.isSuccess) {
+                self.log(.setUpSucceded)
+                completion(nil)
+            } else {
+                let error = self.error(.setUpFailure, description: result.message)
+                self.log(.setUpFailed(error))
+                
+                completion(error)
+            }
         }
     }
     
@@ -54,11 +62,7 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
         log(.fetchBidderInfoStarted(request))
         
         let bidderToken = FBAdSettings.bidderToken
-        if (bidderToken.isEmpty) {
-            log(.fetchBidderInfoFailed(request, error: error(.noBidPayload(placement: request.heliumPlacement), description: "Bidding token is empty.")))
-        } else {
-            log(.fetchBidderInfoSucceeded(request))
-        }
+        log(bidderToken.isEmpty ? .fetchBidderInfoFailed(request, error: error(.noBidPayload(placement: request.heliumPlacement), description: "Bidding token is empty.")) : .fetchBidderInfoSucceeded(request))
         
         completion(["buyeruid": bidderToken])
     }
@@ -89,7 +93,7 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
         /// If CCPA consent has been given, send an empty Array. Otherwise, the Array must contain the String "LDU".
         /// By setting country and state to values of 0, this instructs Meta Audience Network  to perform the geolocation themselves.
         /// https://developers.facebook.com/docs/audience-network/support/faq/ccpa
-        FBAdSettings.setDataProcessingOptions(hasGivenConsent ? [String]() : [limitedDataUsageVal], country: 0, state: 0)
+        FBAdSettings.setDataProcessingOptions(hasGivenConsent ? [] : [limitedDataUsageVal], country: 0, state: 0)
     }
     
     /// Override this method to make an ad request to the partner SDK for the given ad format.
@@ -105,7 +109,7 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
         log(.loadStarted(request))
         
         /// Create and persist a new adapter instance
-        let adapter = Adapter(adapter: self, request: request, partnerAdDelegate: partnerAdDelegate)
+        let adapter = MetaAudienceNetworkAdAdapter(adapter: self, request: request, partnerAdDelegate: partnerAdDelegate)
         adapter.load(viewController: viewController, completion: completion)
         
         adapters[request.identifier] = adapter
@@ -139,31 +143,16 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
     func invalidate(_ partnerAd: PartnerAd, completion: @escaping (Result<PartnerAd, Error>) -> Void) {
         log(.invalidateStarted(partnerAd))
         
-        /// Retrieve the adapter instance to invalidate the ad
-        if let adapter = adapters[partnerAd.request.identifier] {
-            adapter.invalidate(completion: completion)
+        if adapters[partnerAd.request.identifier] != nil {
             adapters.removeValue(forKey: partnerAd.request.identifier)
+            
+            log(.invalidateSucceeded(partnerAd))
+            completion(.success(partnerAd))
         } else {
-            let error = error(.invalidateFailure(placement: partnerAd.request.partnerPlacement), description: "No adapter found.")
+            let error = error(.noAdToInvalidate(placement: partnerAd.request.heliumPlacement))
+            
             log(.invalidateFailed(partnerAd, error: error))
-            
             completion(.failure(error))
-        }
-    }
-    
-    /// Handle partner setup completion
-    /// - Parameters:
-    ///   - result: The Meta Audience Network initialization result.
-    ///   - completion: Handler to notify Helium of task completion.
-    private func onSetUpComplete(result: FBAdInitResults, completion: @escaping (Error?) -> Void) {
-        if (result.isSuccess) {
-            self.log(.setUpSucceded)
-            completion(nil)
-        } else {
-            let error = self.error(.setUpFailure, description: result.message)
-            self.log(.setUpFailed(error))
-            
-            completion(error)
         }
     }
 }

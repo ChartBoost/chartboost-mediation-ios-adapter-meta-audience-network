@@ -1,5 +1,5 @@
 //
-//  Banner.swift
+//  MetaAudienceNetworkAdAdapter+Banner.swift
 //  ChartboostHeliumAdapterMetaAudienceNetwork
 //
 //  Created by Vu Chau on 8/31/22.
@@ -10,43 +10,24 @@ import FBAudienceNetwork
 import HeliumSdk
 
 /// Collection of banner-sepcific API implementations
-extension Adapter: FBAdViewDelegate {
+extension MetaAudienceNetworkAdAdapter: FBAdViewDelegate {
     /// Attempt to load a banner ad.
     /// - Parameters:
-    ///   - request: The relevant data associated with the current ad load call.
     ///   - viewController: The ViewController for ad presentation purposes.
-    ///   - completion: Handler to notify Helium of task completion.
-    func loadBannerAd(request: AdLoadRequest,
-                      viewController: UIViewController?,
-                      completion: @escaping (Result<PartnerAd, Error>) -> Void) {
+    ///   - request: The relevant data associated with the current ad load call.
+    func loadBannerAd(viewController: UIViewController?, request: AdLoadRequest) {
         /// Because Meta Audience Network is bidding-only, validate the bid payload and fail early if it is empty.
         guard let bidPayload = request.adm, !bidPayload.isEmpty else {
-            completion(.failure(error(.loadFailure(placement: request.partnerPlacement), description: "The ad markup is nil/empty.")))
+            loadCompletion?(.failure(self.error(.noBidPayload(placement: request.partnerPlacement))))
             return
         }
         
         let ad = FBAdView.init(placementID: request.partnerPlacement, adSize: getMetaAudienceNetworkBannerAdSize(size: request.size), rootViewController: viewController)
+        partnerAd = PartnerAd(ad: ad, details: [:], request: request)
+        
         ad.delegate = self
         ad.frame = getFrame(size: request.size)
         ad.loadAd(withBidPayload: bidPayload)
-        
-        partnerAd = PartnerAd(ad: ad, details: [:], request: request)
-        
-        loadCompletion = { result in
-            completion(result)
-        }
-    }
-    
-    /// Attempt to destroy the current banner ad.
-    /// - Parameters:
-    ///   - completion: Handler to notify Helium of task completion.
-    func destroyBannerAd(completion: @escaping (Result<PartnerAd, Error>) -> Void) {
-        if let ad = partnerAd.ad as? FBAdView {
-            ad.delegate = nil
-            completion(.success(partnerAd))
-        } else {
-            completion(.failure(error(.invalidateFailure(placement: partnerAd.request.heliumPlacement), description: "Ad is already nil/not a FBAdView.")))
-        }
     }
     
     /// Map Helium's banner sizes to the Meta Audience Network SDK's supported sizes.
@@ -74,9 +55,9 @@ extension Adapter: FBAdViewDelegate {
         let height = size?.height ?? 50
         
         switch height {
-        case 50..<89:
+        case 50...89:
             return CGRect(x: 0, y: 0, width: 320, height: 50)
-        case 90..<249:
+        case 90...249:
             return CGRect(x: 0, y: 0, width: 728, height: 90)
         case 250...:
             return CGRect(x: 0, y: 0, width: 320, height: 250)
@@ -88,18 +69,18 @@ extension Adapter: FBAdViewDelegate {
     // MARK: - FBAdViewDelegate
     
     func adViewDidLoad(_ adView: FBAdView) {
-        loadCompletion?(.success(partnerAd))
+        loadCompletion?(.success(partnerAd)) ?? log(.loadIgnored)
     }
     
     func didFailWithError(adView: FBAdView, error: NSError) {
-        loadCompletion?(.failure(self.error(.loadFailure(placement: request.partnerPlacement), error: error)))
+        loadCompletion?(.failure(self.error(.loadFailure(placement: request.partnerPlacement), error: error))) ?? log(.loadIgnored)
     }
     
     func adViewWillLogImpression(_ adView: FBAdView) {
-        partnerAdDelegate?.didTrackImpression(partnerAd)
+        partnerAdDelegate?.didTrackImpression(partnerAd) ?? log(.delegateUnavailable)
     }
     
     func adViewDidClick(_ adView: FBAdView) {
-        partnerAdDelegate?.didClick(partnerAd)
+        partnerAdDelegate?.didClick(partnerAd) ?? log(.delegateUnavailable)
     }
 }
