@@ -14,10 +14,11 @@ extension MetaAudienceNetworkAdAdapter: FBInterstitialAdDelegate {
     /// Attempt to load an interstitial ad.
     /// - Parameters:
     ///   - request: The relevant data associated with the current ad load call.
-    func loadInterstitialAd(request: AdLoadRequest) {
+    func loadInterstitialAd(request: PartnerAdLoadRequest) {
         /// Because Meta Audience Network is bidding-only, validate the bid payload and fail early if it is empty.
         guard let bidPayload = request.adm, !bidPayload.isEmpty else {
-            loadCompletion?(.failure(self.error(.noBidPayload(placement: request.partnerPlacement))))
+            loadCompletion?(.failure(self.error(.noBidPayload(request))))
+            loadCompletion = nil
             return
         }
         
@@ -37,28 +38,32 @@ extension MetaAudienceNetworkAdAdapter: FBInterstitialAdDelegate {
                 ad.show(fromRootViewController: viewController)
                 return .success(partnerAd)
             } else {
-                return .failure(error(.showFailure(placement: partnerAd.request.partnerPlacement), description: "Ad is invalid."))
+                return .failure(error(.showFailure(partnerAd), description: "Ad is invalid."))
             }
         } else {
-            return .failure(error(.showFailure(placement: partnerAd.request.partnerPlacement), description: "Ad instance is nil/not a FBInterstitialAd."))
+            return .failure(error(.showFailure(partnerAd), description: "Ad instance is nil/not a FBInterstitialAd."))
         }
     }
     
     // MARK: - FBInterstitialAdDelegate
     
     func interstitialAdDidLoad(_ interstitialAd: FBInterstitialAd) {
-        loadCompletion?(.success(partnerAd)) ?? log(.loadIgnored)
+        loadCompletion?(.success(partnerAd)) ?? log(.loadResultIgnored)
+        loadCompletion = nil
     }
     
     func didFailWithError(interstitialAd: FBInterstitialAd, error: NSError) {
-        loadCompletion?(.failure(self.error(.loadFailure(placement: request.partnerPlacement), error: error))) ?? log(.loadIgnored)
+        loadCompletion?(.failure(self.error(.loadFailure(request)))) ?? log(.loadResultIgnored)
+        loadCompletion = nil
     }
     
     func interstitialAdDidClick(_ interstitialAd: FBInterstitialAd) {
+        log(.didClick(partnerAd, error: nil))
         partnerAdDelegate?.didClick(partnerAd) ?? log(.delegateUnavailable)
     }
     
     func interstitialAdDidClose(_ interstitialAd: FBInterstitialAd) {
+        log(.didDismiss(partnerAd, error: nil))
         partnerAdDelegate?.didDismiss(partnerAd, error: nil) ?? log(.delegateUnavailable)
     }
     
@@ -67,6 +72,7 @@ extension MetaAudienceNetworkAdAdapter: FBInterstitialAdDelegate {
     }
     
     func interstitialAdWillLogImpression(_ interstitialAd: FBInterstitialAd) {
+        log(.didTrackImpression(partnerAd))
         partnerAdDelegate?.didTrackImpression(partnerAd) ?? log(.delegateUnavailable)
     }
 }

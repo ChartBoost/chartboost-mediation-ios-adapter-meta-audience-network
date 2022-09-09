@@ -15,10 +15,11 @@ extension MetaAudienceNetworkAdAdapter: FBAdViewDelegate {
     /// - Parameters:
     ///   - viewController: The ViewController for ad presentation purposes.
     ///   - request: The relevant data associated with the current ad load call.
-    func loadBannerAd(viewController: UIViewController?, request: AdLoadRequest) {
+    func loadBannerAd(viewController: UIViewController?, request: PartnerAdLoadRequest) {
         /// Because Meta Audience Network is bidding-only, validate the bid payload and fail early if it is empty.
         guard let bidPayload = request.adm, !bidPayload.isEmpty else {
-            loadCompletion?(.failure(self.error(.noBidPayload(placement: request.partnerPlacement))))
+            loadCompletion?(.failure(self.error(.noBidPayload(request))))
+            loadCompletion = nil
             return
         }
         
@@ -69,18 +70,21 @@ extension MetaAudienceNetworkAdAdapter: FBAdViewDelegate {
     // MARK: - FBAdViewDelegate
     
     func adViewDidLoad(_ adView: FBAdView) {
-        loadCompletion?(.success(partnerAd)) ?? log(.loadIgnored)
+        loadCompletion?(.success(partnerAd)) ?? log(.loadResultIgnored)
     }
     
     func didFailWithError(adView: FBAdView, error: NSError) {
-        loadCompletion?(.failure(self.error(.loadFailure(placement: request.partnerPlacement), error: error))) ?? log(.loadIgnored)
+        loadCompletion?(.failure(self.error(.loadFailure(request)))) ?? log(.loadResultIgnored)
+        loadCompletion = nil
     }
     
     func adViewWillLogImpression(_ adView: FBAdView) {
+        log(.didTrackImpression(partnerAd))
         partnerAdDelegate?.didTrackImpression(partnerAd) ?? log(.delegateUnavailable)
     }
     
     func adViewDidClick(_ adView: FBAdView) {
+        log(.didClick(partnerAd, error: nil))
         partnerAdDelegate?.didClick(partnerAd) ?? log(.delegateUnavailable)
     }
 }

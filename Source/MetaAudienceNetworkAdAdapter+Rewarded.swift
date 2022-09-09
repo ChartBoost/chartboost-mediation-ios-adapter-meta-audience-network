@@ -14,10 +14,11 @@ extension MetaAudienceNetworkAdAdapter: FBRewardedVideoAdDelegate {
     /// Attempt to load a rewarded ad.
     /// - Parameters:
     ///   - request: The relevant data associated with the current ad load call.
-    func loadRewardedAd(request: AdLoadRequest) {
+    func loadRewardedAd(request: PartnerAdLoadRequest) {
         /// Because Meta Audience Network is bidding-only, validate the bid payload and fail early if it is empty.
         guard let bidPayload = request.adm, !bidPayload.isEmpty else {
-            loadCompletion?(.failure(self.error(.noBidPayload(placement: request.partnerPlacement))))
+            loadCompletion?(.failure(self.error(.noBidPayload(request))))
+            loadCompletion = nil
             return
         }
         
@@ -37,28 +38,32 @@ extension MetaAudienceNetworkAdAdapter: FBRewardedVideoAdDelegate {
                 ad.show(fromRootViewController: viewController)
                 return .success(partnerAd)
             } else {
-                return .failure(error(.showFailure(placement: request.partnerPlacement), description: "The ad is invalid."))
+                return .failure(error(.showFailure(partnerAd), description: "The ad is invalid."))
             }
         } else {
-            return .failure(error(.showFailure(placement: request.partnerPlacement), description: "Ad instance is nil/not a FBRewardedVideoAd."))
+            return .failure(error(.showFailure(partnerAd), description: "Ad instance is nil/not a FBRewardedVideoAd."))
         }
     }
     
     // MARK: - FBRewardedVideoAdDelegate
     
     func rewardedVideoAdDidLoad(_ rewardedVideoAd: FBRewardedVideoAd) {
-        loadCompletion?(.success(partnerAd)) ?? log(.loadIgnored)
+        loadCompletion?(.success(partnerAd)) ?? log(.loadResultIgnored)
+        loadCompletion = nil
     }
     
     func didFailWithError(rewardedVideoAd: FBRewardedVideoAd, error: NSError) {
-        loadCompletion?(.failure(self.error(.loadFailure(placement: request.partnerPlacement), error: error))) ?? log(.loadIgnored)
+        loadCompletion?(.failure(self.error(.loadFailure(request)))) ?? log(.loadResultIgnored)
+        loadCompletion = nil
     }
     
     func rewardedVideoAdDidClick(_ rewardedVideoAd: FBRewardedVideoAd) {
+        log(.didClick(partnerAd, error: nil))
         partnerAdDelegate?.didClick(partnerAd) ?? log(.delegateUnavailable)
     }
     
     func rewardedVideoAdDidClose(_ rewardedVideoAd: FBRewardedVideoAd) {
+        log(.didDismiss(partnerAd, error: nil))
         partnerAdDelegate?.didDismiss(partnerAd, error: nil) ?? log(.delegateUnavailable)
     }
     
@@ -67,11 +72,15 @@ extension MetaAudienceNetworkAdAdapter: FBRewardedVideoAdDelegate {
     }
     
     func rewardedVideoAdWillLogImpression(_ rewardedVideoAd: FBRewardedVideoAd) {
+        log(.didTrackImpression(partnerAd))
         partnerAdDelegate?.didTrackImpression(partnerAd) ?? log(.delegateUnavailable)
     }
     
     func rewardedVideoAdVideoComplete(_ rewardedVideoAd: FBRewardedVideoAd) {
-        partnerAdDelegate?.didReward(partnerAd, reward: Reward(amount: 0, label: "")) ?? log(.delegateUnavailable)
+        let reward = Reward(amount: 0, label: "")
+        
+        log(.didReward(partnerAd, reward: reward))
+        partnerAdDelegate?.didReward(partnerAd, reward: reward) ?? log(.delegateUnavailable)
     }
     
     func rewardedVideoAdServerRewardDidSucceed(_ rewardedVideoAd: FBRewardedVideoAd) {

@@ -62,7 +62,7 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
         log(.fetchBidderInfoStarted(request))
         
         let bidderToken = FBAdSettings.bidderToken
-        log(bidderToken.isEmpty ? .fetchBidderInfoFailed(request, error: error(.noBidPayload(placement: request.heliumPlacement), description: "Bidding token is empty.")) : .fetchBidderInfoSucceeded(request))
+        log(bidderToken.isEmpty ? .fetchBidderInfoFailed(request, error: error(.fetchBidderInfoFailure(request))) : .fetchBidderInfoSucceeded(request))
         
         completion(["buyeruid": bidderToken])
     }
@@ -102,7 +102,7 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
     ///   - partnerAdDelegate: Delegate for ad lifecycle notification purposes.
     ///   - viewController: The ViewController for ad presentation purposes.
     ///   - completion: Handler to notify Helium of task completion.
-    func load(request: AdLoadRequest,
+    func load(request: PartnerAdLoadRequest,
               partnerAdDelegate: PartnerAdDelegate,
               viewController: UIViewController?,
               completion: @escaping (Result<PartnerAd, Error>) -> Void) {
@@ -129,7 +129,7 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
         if let adapter = adapters[partnerAd.request.identifier] {
             adapter.show(viewController: viewController, completion: completion)
         } else {
-            let error = error(.noAdReadyToShow(placement: partnerAd.request.partnerPlacement), description: "No adapter found.")
+            let error = error(.noAdReadyToShow(partnerAd))
             log(.showFailed(partnerAd, error: error))
             
             completion(.failure(error))
@@ -149,7 +149,7 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
             log(.invalidateSucceeded(partnerAd))
             completion(.success(partnerAd))
         } else {
-            let error = error(.noAdToInvalidate(placement: partnerAd.request.heliumPlacement))
+            let error = error(.noAdToInvalidate(partnerAd))
             
             log(.invalidateFailed(partnerAd, error: error))
             completion(.failure(error))

@@ -14,8 +14,8 @@ final class MetaAudienceNetworkAdAdapter: NSObject, PartnerLogger, PartnerErrorF
     /// The current adapter instance
     let adapter: PartnerAdapter
     
-    /// The current AdLoadRequest containing data relevant to the curent ad request
-    let request: AdLoadRequest
+    /// The current PartnerAdLoadRequest containing data relevant to the curent ad request
+    let request: PartnerAdLoadRequest
     
     /// A PartnerAd object with a placeholder (nil) ad object.
     lazy var partnerAd = PartnerAd(ad: nil, details: [:], request: request)
@@ -31,7 +31,7 @@ final class MetaAudienceNetworkAdAdapter: NSObject, PartnerLogger, PartnerErrorF
     ///   - adapter: The current adapter instance
     ///   - request: The current AdLoadRequest containing data relevant to the curent ad request
     ///   - partnerAdDelegate: The partner ad delegate to notify Helium of ad lifecycle events.
-    init(adapter: PartnerAdapter, request: AdLoadRequest, partnerAdDelegate: PartnerAdDelegate) {
+    init(adapter: PartnerAdapter, request: PartnerAdLoadRequest, partnerAdDelegate: PartnerAdDelegate) {
         self.adapter = adapter
         self.request = request
         self.partnerAdDelegate = partnerAdDelegate
@@ -44,8 +44,18 @@ final class MetaAudienceNetworkAdAdapter: NSObject, PartnerLogger, PartnerErrorF
     ///   - viewController: The ViewController for ad presentation purposes.
     ///   - completion: The completion handler to notify Helium of ad load completion result.
     func load(viewController: UIViewController?, completion: @escaping (Result<PartnerAd, Error>) -> Void) {
-        /// Update the load completion handler so it can be used to notify Helium when the partner fires its load delegate.
-        loadCompletion = completion
+        loadCompletion = { [weak self] result in
+            if let self = self {
+                do {
+                    self.log(.loadSucceeded(try result.get()))
+                } catch {
+                    self.log(.loadFailed(self.request, error: error))
+                }
+            }
+            
+            self?.loadCompletion = nil
+            completion(result)
+        }
         
         switch request.format {
         case .banner:
@@ -54,17 +64,6 @@ final class MetaAudienceNetworkAdAdapter: NSObject, PartnerLogger, PartnerErrorF
             loadInterstitialAd(request: request)
         case .rewarded:
             loadRewardedAd(request: request)
-        }
-        
-        loadCompletion = { result in
-            do {
-                self.log(.loadSucceeded(try result.get()))
-            } catch {
-                self.log(.loadFailed(self.request, error: error))
-            }
-            
-            self.loadCompletion = nil
-            completion(result)
         }
     }
     
