@@ -11,7 +11,7 @@ import UIKit
 import FBAudienceNetwork
 
 /// The Helium Meta Audience Network adapter
-final class MetaAudienceNetworkAdapter: PartnerAdapter {
+final class MetaAudienceNetworkAdapter: ModularPartnerAdapter {
     /// Get the version of the Meta Audience Network SDK.
     let partnerSDKVersion = FB_AD_SDK_VERSION
     
@@ -31,7 +31,7 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
     let limitedDataUsageVal = "LDU"
     
     /// Storage of adapter instances.  Keyed by the request identifier.
-    var adapters: [String: MetaAudienceNetworkAdAdapter] = [:]
+    var adAdapters: [String: PartnerAdAdapter] = [:]
     
     /// Override this method to initialize the Meta Audience Network SDK so that it's ready to request and display ads.
     /// - Parameters:
@@ -96,63 +96,7 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
         FBAdSettings.setDataProcessingOptions(hasGivenConsent ? [] : [limitedDataUsageVal], country: 0, state: 0)
     }
     
-    /// Override this method to make an ad request to the partner SDK for the given ad format.
-    /// - Parameters:
-    ///   - request: The relevant data associated with the current ad load call.
-    ///   - partnerAdDelegate: Delegate for ad lifecycle notification purposes.
-    ///   - viewController: The ViewController for ad presentation purposes.
-    ///   - completion: Handler to notify Helium of task completion.
-    func load(request: PartnerAdLoadRequest,
-              partnerAdDelegate: PartnerAdDelegate,
-              viewController: UIViewController?,
-              completion: @escaping (Result<PartnerAd, Error>) -> Void) {
-        log(.loadStarted(request))
-        
-        /// Create and persist a new adapter instance
-        let adapter = MetaAudienceNetworkAdAdapter(adapter: self, request: request, partnerAdDelegate: partnerAdDelegate)
-        adapter.load(viewController: viewController, completion: completion)
-        
-        adapters[request.identifier] = adapter
-    }
-    
-    /// Override this method to show the currently loaded ad.
-    /// - Parameters:
-    ///   - partnerAd: The PartnerAd instance containing the ad to be shown.
-    ///   - viewController: The ViewController for ad presentation purposes.
-    ///   - completion: Handler to notify Helium of task completion.
-    func show(_ partnerAd: PartnerAd,
-              viewController: UIViewController,
-              completion: @escaping (Result<PartnerAd, Error>) -> Void) {
-        log(.showStarted(partnerAd))
-        
-        /// Retrieve the adapter instance to show the ad
-        if let adapter = adapters[partnerAd.request.identifier] {
-            adapter.show(viewController: viewController, completion: completion)
-        } else {
-            let error = error(.noAdReadyToShow(partnerAd))
-            log(.showFailed(partnerAd, error: error))
-            
-            completion(.failure(error))
-        }
-    }
-    
-    /// Override this method to discard current ad objects and release resources.
-    /// - Parameters:
-    ///   - partnerAd: The PartnerAd instance containing the ad to be invalidated.
-    ///   - completion: Handler to notify Helium of task completion.
-    func invalidate(_ partnerAd: PartnerAd, completion: @escaping (Result<PartnerAd, Error>) -> Void) {
-        log(.invalidateStarted(partnerAd))
-        
-        if adapters[partnerAd.request.identifier] != nil {
-            adapters.removeValue(forKey: partnerAd.request.identifier)
-            
-            log(.invalidateSucceeded(partnerAd))
-            completion(.success(partnerAd))
-        } else {
-            let error = error(.noAdToInvalidate(partnerAd))
-            
-            log(.invalidateFailed(partnerAd, error: error))
-            completion(.failure(error))
-        }
+    func makeAdAdapter(request: PartnerAdLoadRequest, partnerAdDelegate: PartnerAdDelegate) throws -> PartnerAdAdapter {
+        MetaAudienceNetworkAdAdapter(adapter: self, request: request, partnerAdDelegate: partnerAdDelegate)
     }
 }
