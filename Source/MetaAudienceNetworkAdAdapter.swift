@@ -10,7 +10,7 @@ import FBAudienceNetwork
 import HeliumSdk
 import UIKit
 
-final class MetaAudienceNetworkAdAdapter: NSObject, PartnerLogger, PartnerErrorFactory {
+final class MetaAudienceNetworkAdAdapter: NSObject, PartnerAdAdapter {
     /// The current adapter instance
     let adapter: PartnerAdapter
     
@@ -43,16 +43,8 @@ final class MetaAudienceNetworkAdAdapter: NSObject, PartnerLogger, PartnerErrorF
     /// - Parameters:
     ///   - viewController: The ViewController for ad presentation purposes.
     ///   - completion: The completion handler to notify Helium of ad load completion result.
-    func load(viewController: UIViewController?, completion: @escaping (Result<PartnerAd, Error>) -> Void) {
+    func load(with viewController: UIViewController?, completion: @escaping (Result<PartnerAd, Error>) -> Void) {
         loadCompletion = { [weak self] result in
-            if let self = self {
-                do {
-                    self.log(.loadSucceeded(try result.get()))
-                } catch {
-                    self.log(.loadFailed(self.request, error: error))
-                }
-            }
-            
             self?.loadCompletion = nil
             completion(result)
         }
@@ -71,11 +63,10 @@ final class MetaAudienceNetworkAdAdapter: NSObject, PartnerLogger, PartnerErrorF
     /// - Parameters:
     ///   - viewController: The ViewController for ad presentation purposes.
     ///   - completion: The completion handler to notify Helium of ad show completion result.
-    func show(viewController: UIViewController, completion: @escaping (Result<PartnerAd, Error>) -> Void) {
+    func show(with viewController: UIViewController, completion: @escaping (Result<PartnerAd, Error>) -> Void) {
         switch request.format {
         case .banner:
             /// Banner does not have a separate show mechanism
-            log(.showSucceeded(partnerAd))
             completion(.success(partnerAd))
         case .interstitial:
             completion(showInterstitialAd(viewController: viewController))
