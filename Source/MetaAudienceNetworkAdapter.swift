@@ -77,11 +77,13 @@ final class MetaAudienceNetworkAdapter: ModularPartnerAdapter {
     /// - Parameter status: The user's current GDPR consent status.
     func setGDPRConsentStatus(_ status: GDPRConsentStatus) {
         /// NO-OP. Meta Audience Network automatically handles GDPR.
+        log("Meta Audience Network manages GDPR consent outside the SDK")
     }
     
     /// Override this method to notify your partner SDK of the COPPA subjectivity as determined by the Helium SDK.
     /// - Parameter isSubject: True if the user is subject to COPPA, false otherwise.
     func setUserSubjectToCOPPA(_ isSubject: Bool) {
+        log(.setCOPPAConsent(isSubject))
         FBAdSettings.isMixedAudience = isSubject
     }
     
@@ -90,6 +92,7 @@ final class MetaAudienceNetworkAdapter: ModularPartnerAdapter {
     ///   - hasGivenConsent: True if the user has given CCPA consent, false otherwise.
     ///   - privacyString: The CCPA privacy String.
     func setCCPAConsent(hasGivenConsent: Bool, privacyString: String?) {
+        log(.setCCPAConsent(hasGivenConsent))
         /// If CCPA consent has been given, send an empty Array. Otherwise, the Array must contain the String "LDU".
         /// By setting country and state to values of 0, this instructs Meta Audience Network  to perform the geolocation themselves.
         /// https://developers.facebook.com/docs/audience-network/support/faq/ccpa
