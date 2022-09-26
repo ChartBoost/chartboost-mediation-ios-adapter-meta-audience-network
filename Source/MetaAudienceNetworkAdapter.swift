@@ -71,19 +71,20 @@ final class MetaAudienceNetworkAdapter: ModularPartnerAdapter {
     /// - Parameter applies: true if GDPR applies, false otherwise.
     func setGDPRApplies(_ applies: Bool) {
         /// NO-OP. Meta Audience Network automatically handles GDPR.
+        log("Value discarded. Meta Audience Network manages GDPR consent outside the SDK")
     }
     
     /// Override this method to notify your partner SDK of the GDPR consent status as determined by the Helium SDK.
     /// - Parameter status: The user's current GDPR consent status.
     func setGDPRConsentStatus(_ status: GDPRConsentStatus) {
         /// NO-OP. Meta Audience Network automatically handles GDPR.
-        log("Meta Audience Network manages GDPR consent outside the SDK")
+        log("Value discarded. Meta Audience Network manages GDPR consent outside the SDK")
     }
     
     /// Override this method to notify your partner SDK of the COPPA subjectivity as determined by the Helium SDK.
     /// - Parameter isSubject: True if the user is subject to COPPA, false otherwise.
     func setUserSubjectToCOPPA(_ isSubject: Bool) {
-        log(.setCOPPAConsent(isSubject))
+        log(.privacyUpdated(setting: "'isMixedAudience'", value: isSubject))
         FBAdSettings.isMixedAudience = isSubject
     }
     
@@ -92,7 +93,7 @@ final class MetaAudienceNetworkAdapter: ModularPartnerAdapter {
     ///   - hasGivenConsent: True if the user has given CCPA consent, false otherwise.
     ///   - privacyString: The CCPA privacy String.
     func setCCPAConsent(hasGivenConsent: Bool, privacyString: String?) {
-        log(.setCCPAConsent(hasGivenConsent))
+        log(.privacyUpdated(setting: "'limitedDataUsage'", value: hasGivenConsent ? "empty (off)" : limitedDataUsageVal))
         /// If CCPA consent has been given, send an empty Array. Otherwise, the Array must contain the String "LDU".
         /// By setting country and state to values of 0, this instructs Meta Audience Network  to perform the geolocation themselves.
         /// https://developers.facebook.com/docs/audience-network/support/faq/ccpa
