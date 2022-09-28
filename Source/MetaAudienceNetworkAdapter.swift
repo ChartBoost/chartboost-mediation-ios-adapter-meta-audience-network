@@ -93,11 +93,12 @@ final class MetaAudienceNetworkAdapter: ModularPartnerAdapter {
     ///   - hasGivenConsent: True if the user has given CCPA consent, false otherwise.
     ///   - privacyString: The CCPA privacy String.
     func setCCPAConsent(hasGivenConsent: Bool, privacyString: String?) {
-        log(.privacyUpdated(setting: "'limitedDataUsage'", value: hasGivenConsent ? "empty (off)" : limitedDataUsageVal))
         /// If CCPA consent has been given, send an empty Array. Otherwise, the Array must contain the String "LDU".
         /// By setting country and state to values of 0, this instructs Meta Audience Network  to perform the geolocation themselves.
         /// https://developers.facebook.com/docs/audience-network/support/faq/ccpa
-        FBAdSettings.setDataProcessingOptions(hasGivenConsent ? [] : [limitedDataUsageVal], country: 0, state: 0)
+        let dataProcessingOptions = hasGivenConsent ? [] : [limitedDataUsageVal]
+        log(.privacyUpdated(setting: "dataProcessingOptions", value: dataProcessingOptions))
+        FBAdSettings.setDataProcessingOptions(dataProcessingOptions, country: 0, state: 0)
     }
     
     func makeAdAdapter(request: PartnerAdLoadRequest, partnerAdDelegate: PartnerAdDelegate) throws -> PartnerAdAdapter {
