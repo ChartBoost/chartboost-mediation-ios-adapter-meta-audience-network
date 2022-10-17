@@ -102,9 +102,8 @@ extension MetaAudienceNetworkAdapterRewardedAd: FBRewardedVideoAdDelegate {
     }
     
     func rewardedVideoAdVideoComplete(_ rewardedVideoAd: FBRewardedVideoAd) {
-        let reward = Reward(amount: nil, label: nil)
-        log(.didReward(reward))
-        delegate?.didReward(self, details: [:], reward: reward) ?? log(.delegateUnavailable)
+        log(.didReward)
+        delegate?.didReward(self, details: [:]) ?? log(.delegateUnavailable)
     }
     
     func rewardedVideoAdServerRewardDidSucceed(_ rewardedVideoAd: FBRewardedVideoAd) {

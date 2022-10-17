@@ -67,15 +67,10 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
         completion(["buyeruid": bidderToken])
     }
     
-    /// Indicates if GDPR applies or not.
-    /// - parameter applies: `true` if GDPR applies, `false` otherwise.
-    func setGDPRApplies(_ applies: Bool) {
-        /// NO-OP. Meta Audience Network automatically handles GDPR.
-    }
-    
-    /// Indicates the user's GDPR consent status.
+    /// Indicates if GDPR applies or not and the user's GDPR consent status.
+    /// - parameter applies: `true` if GDPR applies, `false` if not, `nil` if the publisher has not provided this information.
     /// - parameter status: One of the `GDPRConsentStatus` values depending on the user's preference.
-    func setGDPRConsentStatus(_ status: GDPRConsentStatus) {
+    func setGDPR(applies: Bool?, status: GDPRConsentStatus) {
         /// NO-OP. Meta Audience Network automatically handles GDPR.
     }
     
