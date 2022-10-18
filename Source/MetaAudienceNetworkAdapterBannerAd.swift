@@ -34,14 +34,15 @@ final class MetaAudienceNetworkAdapterBannerAd: MetaAudienceNetworkAdapterAd, Pa
         
         loadCompletion = completion
         
+        let adSize = metaAudienceNetworkBannerAdSize(with: request.size)
         let ad = FBAdView(
             placementID: request.partnerPlacement,
-            adSize: getMetaAudienceNetworkBannerAdSize(size: request.size),
+            adSize: adSize,
             rootViewController: viewController
         )
         self.ad = ad
         ad.delegate = self
-        ad.frame = getFrame(size: request.size)
+        ad.frame = CGRect(origin: .zero, size: adSize.size)
         ad.loadAd(withBidPayload: bidPayload)
     }
     
@@ -56,7 +57,7 @@ final class MetaAudienceNetworkAdapterBannerAd: MetaAudienceNetworkAdapterAd, Pa
     /// Map Helium's banner sizes to the Meta Audience Network SDK's supported sizes.
     /// - Parameter size: The Helium's banner size.
     /// - Returns: The corresponding Meta Audience Network banner size.
-    private func getMetaAudienceNetworkBannerAdSize(size: CGSize?) -> FBAdSize {
+    private func metaAudienceNetworkBannerAdSize(with size: CGSize?) -> FBAdSize {
         let height = size?.height ?? 50
         
         switch height {
@@ -68,24 +69,6 @@ final class MetaAudienceNetworkAdapterBannerAd: MetaAudienceNetworkAdapterAd, Pa
             return kFBAdSizeHeight250Rectangle
         default:
             return kFBAdSizeHeight50Banner
-        }
-    }
-    
-    /// Create a frame for the corresponding Helium banner size.
-    /// - Parameter size: The Helium's banner size.
-    /// - Returns: The corresponding CGRect.
-    private func getFrame(size: CGSize?) -> CGRect {
-        let height = size?.height ?? 50
-        
-        switch height {
-        case 50...89:
-            return CGRect(x: 0, y: 0, width: 320, height: 50)
-        case 90...249:
-            return CGRect(x: 0, y: 0, width: 728, height: 90)
-        case 250...:
-            return CGRect(x: 0, y: 0, width: 320, height: 250)
-        default:
-            return CGRect(x: 0, y: 0, width: 320, height: 50)
         }
     }
 }
