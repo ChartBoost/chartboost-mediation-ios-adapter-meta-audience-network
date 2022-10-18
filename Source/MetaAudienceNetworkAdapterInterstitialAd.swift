@@ -12,6 +12,7 @@ import HeliumSdk
 /// The Helium Meta Audience Network adapter interstitial ad.
 final class MetaAudienceNetworkAdapterInterstitialAd: MetaAudienceNetworkAdapterAd, PartnerAd {
     
+    /// The Meta Audience Network SDK ad instance.
     private var ad: FBInterstitialAd?
     
     /// The partner ad view to display inline. E.g. a banner view.

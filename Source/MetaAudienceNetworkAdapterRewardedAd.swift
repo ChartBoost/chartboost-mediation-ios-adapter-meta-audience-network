@@ -12,13 +12,12 @@ import HeliumSdk
 /// The Helium Meta Audience Network adapter rewarded ad.
 final class MetaAudienceNetworkAdapterRewardedAd: MetaAudienceNetworkAdapterAd, PartnerAd {
     
+    /// The Meta Audience Network SDK ad instance.
     private var ad: FBRewardedVideoAd?
-    
     
     /// The partner ad view to display inline. E.g. a banner view.
     /// Should be nil for full-screen ads.
     var inlineView: UIView? { nil }
-    
     
     /// Loads an ad.
     /// - parameter viewController: The view controller on which the ad will be presented on. Needed on load for some banners.
