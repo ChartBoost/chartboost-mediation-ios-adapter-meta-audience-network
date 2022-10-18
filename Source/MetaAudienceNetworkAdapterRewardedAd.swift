@@ -93,7 +93,7 @@ extension MetaAudienceNetworkAdapterRewardedAd: FBRewardedVideoAdDelegate {
     }
     
     func rewardedVideoAdWillClose(_ rewardedVideoAd: FBRewardedVideoAd) {
-        log("rewardedVideoAdWillClose")
+        log(.delegateCallIgnored)
     }
     
     func rewardedVideoAdWillLogImpression(_ rewardedVideoAd: FBRewardedVideoAd) {
@@ -107,10 +107,10 @@ extension MetaAudienceNetworkAdapterRewardedAd: FBRewardedVideoAdDelegate {
     }
     
     func rewardedVideoAdServerRewardDidSucceed(_ rewardedVideoAd: FBRewardedVideoAd) {
-        log("rewardedVideoAdServerRewardDidSucceed")
+        log(.delegateCallIgnored)
     }
     
     func rewardedVideoAdServerRewardDidFail(_ rewardedVideoAd: FBRewardedVideoAd) {
-        log("rewardedVideoAdServerRewardDidFail")
+        log(.delegateCallIgnored)
     }
 }
