@@ -92,7 +92,7 @@ extension MetaAudienceNetworkAdapterInterstitialAd: FBInterstitialAdDelegate {
     }
     
     func interstitialAdWillClose(_ interstitialAd: FBInterstitialAd) {
-        log("interstitialAdWillClose")
+        log(.delegateCallIgnored)
     }
     
     func interstitialAdWillLogImpression(_ interstitialAd: FBInterstitialAd) {
