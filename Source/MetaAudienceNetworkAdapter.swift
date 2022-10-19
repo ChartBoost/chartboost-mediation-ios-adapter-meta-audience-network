@@ -10,33 +10,31 @@ import HeliumSdk
 import UIKit
 import FBAudienceNetwork
 
-/// The Helium Meta Audience Network adapter
-final class MetaAudienceNetworkAdapter: ModularPartnerAdapter {
-    /// Get the version of the Meta Audience Network SDK.
+/// The Helium Meta Audience Network adapter.
+final class MetaAudienceNetworkAdapter: PartnerAdapter {
+    
+    /// The version of the partner SDK.
     let partnerSDKVersion = FB_AD_SDK_VERSION
     
-    /// Get the version of the mediation adapter. To determine the version, use the following scheme to indicate compatibility:
-    /// [Helium SDK Major Version].[Partner SDK Major Version].[Partner SDK Minor Version].[Partner SDK Patch Version].[Adapter Version]
-    ///
-    /// For example, if this adapter is compatible with Helium SDK 4.x.y and partner SDK 1.0.0, and this is its initial release, then its version should be 4.1.0.0.0.
+    /// The version of the adapter.
+    /// The first digit is Helium SDK's major version. The last digit is the build version of the adapter. The intermediate digits correspond to the partner SDK version.
     let adapterVersion = "4.6.9.0.0"
     
-    /// Get the internal name of the partner.
+    /// The partner's unique identifier.
     let partnerIdentifier = "facebook"
     
-    /// Get the external/official name of the partner.
+    /// The human-friendly partner name.
     let partnerDisplayName = "Meta Audience Network"
     
-    /// CCPA signal representing limited data usage in the case consent has not been given.
-    let limitedDataUsageVal = "LDU"
+    /// The designated initializer for the adapter.
+    /// Helium SDK will use this constructor to create instances of conforming types.
+    /// - parameter storage: An object that exposes storage managed by the Helium SDK to the adapter.
+    /// It includes a list of created `PartnerAd` instances. You may ignore this parameter if you don't need it.
+    init(storage: PartnerAdapterStorage) {}
     
-    /// Storage of adapter instances.  Keyed by the request identifier.
-    var adAdapters: [String: PartnerAdAdapter] = [:]
-    
-    /// Override this method to initialize the Meta Audience Network SDK so that it's ready to request and display ads.
-    /// - Parameters:
-    ///   - configuration: The necessary initialization data provided by Helium.
-    ///   - completion: Handler to notify Helium of task completion.
+    /// Does any setup needed before beginning to load ads.
+    /// - parameter configuration: Configuration data for the adapter to set up.
+    /// - parameter completion: Closure to be performed by the adapter when it's done setting up. It should include an error indicating the cause for failure or `nil` if the operation finished successfully.
     func setUp(with configuration: PartnerConfiguration, completion: @escaping (Error?) -> Void) {
         log(.setUpStarted)
         let settings = FBAdInitSettings(placementIDs: [], mediationService: "Helium")
@@ -54,54 +52,72 @@ final class MetaAudienceNetworkAdapter: ModularPartnerAdapter {
         }
     }
     
-    /// Override this method to compute and return a bid token for the bid request.
-    /// - Parameters:
-    ///   - request: The necessary data associated with the current bid request.
-    ///   - completion: Handler to notify Helium of task completion.
-    func fetchBidderInformation(request: PreBidRequest, completion: @escaping ([String : String]) -> Void) {
+    /// Fetches bidding tokens needed for the partner to participate in an auction.
+    /// - parameter request: Information about the ad load request.
+    /// - parameter completion: Closure to be performed with the fetched info.
+    func fetchBidderInformation(request: PreBidRequest, completion: @escaping ([String : String]?) -> Void) {
         log(.fetchBidderInfoStarted(request))
         
         let bidderToken = FBAdSettings.bidderToken
-        log(bidderToken.isEmpty ? .fetchBidderInfoFailed(request, error: error(.fetchBidderInfoFailure(request))) : .fetchBidderInfoSucceeded(request))
-        
+        if bidderToken.isEmpty {
+            log(.fetchBidderInfoFailed(request, error: error(.fetchBidderInfoFailure(request))))
+        } else {
+            log(.fetchBidderInfoSucceeded(request))
+        }
         completion(["buyeruid": bidderToken])
     }
     
-    /// Override this method to notify your partner SDK of GDPR applicability as determined by the Helium SDK.
-    /// - Parameter applies: true if GDPR applies, false otherwise.
+    /// Indicates if GDPR applies or not.
+    /// - parameter applies: `true` if GDPR applies, `false` otherwise.
     func setGDPRApplies(_ applies: Bool) {
         /// NO-OP. Meta Audience Network automatically handles GDPR.
-        log("Value discarded. Meta Audience Network manages GDPR consent outside the SDK")
     }
     
-    /// Override this method to notify your partner SDK of the GDPR consent status as determined by the Helium SDK.
-    /// - Parameter status: The user's current GDPR consent status.
+    /// Indicates the user's GDPR consent status.
+    /// - parameter status: One of the `GDPRConsentStatus` values depending on the user's preference.
     func setGDPRConsentStatus(_ status: GDPRConsentStatus) {
         /// NO-OP. Meta Audience Network automatically handles GDPR.
-        log("Value discarded. Meta Audience Network manages GDPR consent outside the SDK")
     }
     
-    /// Override this method to notify your partner SDK of the COPPA subjectivity as determined by the Helium SDK.
-    /// - Parameter isSubject: True if the user is subject to COPPA, false otherwise.
+    /// Indicates if the user is subject to COPPA or not.
+    /// - parameter isSubject: `true` if the user is subject, `false` otherwise.
     func setUserSubjectToCOPPA(_ isSubject: Bool) {
-        log(.privacyUpdated(setting: "'isMixedAudience'", value: isSubject))
         FBAdSettings.isMixedAudience = isSubject
+        log(.privacyUpdated(setting: "'isMixedAudience'", value: isSubject))
     }
     
-    /// Override this method to notify your partner SDK of the CCPA privacy String as supplied by the Helium SDK.
-    /// - Parameters:
-    ///   - hasGivenConsent: True if the user has given CCPA consent, false otherwise.
-    ///   - privacyString: The CCPA privacy String.
+    /// Indicates the CCPA status both as a boolean and as an IAB US privacy string.
+    /// - parameter hasGivenConsent: A boolean indicating if the user has given consent.
+    /// - parameter privacyString: An IAB-compliant string indicating the CCPA status.
     func setCCPAConsent(hasGivenConsent: Bool, privacyString: String?) {
         /// If CCPA consent has been given, send an empty Array. Otherwise, the Array must contain the String "LDU".
         /// By setting country and state to values of 0, this instructs Meta Audience Network  to perform the geolocation themselves.
         /// https://developers.facebook.com/docs/audience-network/support/faq/ccpa
-        let dataProcessingOptions = hasGivenConsent ? [] : [limitedDataUsageVal]
-        log(.privacyUpdated(setting: "dataProcessingOptions", value: dataProcessingOptions))
+        let dataProcessingOptions = hasGivenConsent ? [] : [String.limitedDataUsage]
         FBAdSettings.setDataProcessingOptions(dataProcessingOptions, country: 0, state: 0)
+        log(.privacyUpdated(setting: "dataProcessingOptions", value: dataProcessingOptions))
     }
     
-    func makeAdAdapter(request: PartnerAdLoadRequest, partnerAdDelegate: PartnerAdDelegate) throws -> PartnerAdAdapter {
-        MetaAudienceNetworkAdAdapter(adapter: self, request: request, partnerAdDelegate: partnerAdDelegate)
+    /// Creates a new ad object in charge of communicating with a single partner SDK ad instance.
+    /// Helium SDK calls this method to create a new ad for each new load request. Ad instances are never reused.
+    /// Helium SDK takes care of storing and disposing of ad instances so you don't need to.
+    /// `invalidate()` is called on ads before disposing of them in case partners need to perform any custom logic before the object gets destroyed.
+    /// If, for some reason, a new ad cannot be provided, an error should be thrown.
+    /// - parameter request: Information about the ad load request.
+    /// - parameter delegate: The delegate that will receive ad life-cycle notifications.
+    func makeAd(request: PartnerAdLoadRequest, delegate: PartnerAdDelegate) throws -> PartnerAd {
+        switch request.format {
+        case .interstitial:
+            return MetaAudienceNetworkAdapterInterstitialAd(adapter: self, request: request, delegate: delegate)
+        case .rewarded:
+            return MetaAudienceNetworkAdapterRewardedAd(adapter: self, request: request, delegate: delegate)
+        case .banner:
+            return MetaAudienceNetworkAdapterBannerAd(adapter: self, request: request, delegate: delegate)
+        }
     }
+}
+
+private extension String {
+    /// CCPA signal representing limited data usage in the case consent has not been given.
+    static let limitedDataUsage = "LDU"
 }
