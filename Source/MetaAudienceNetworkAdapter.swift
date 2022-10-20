@@ -75,16 +75,16 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
     }
     
     /// Indicates if the user is subject to COPPA or not.
-    /// - parameter isSubject: `true` if the user is subject, `false` otherwise.
-    func setUserSubjectToCOPPA(_ isSubject: Bool) {
-        FBAdSettings.isMixedAudience = isSubject
-        log(.privacyUpdated(setting: "'isMixedAudience'", value: isSubject))
+    /// - parameter isChildDirected: `true` if the user is subject to COPPA, `false` otherwise.
+    func setCOPPA(isChildDirected: Bool) {
+        FBAdSettings.isMixedAudience = isChildDirected
+        log(.privacyUpdated(setting: "isMixedAudience", value: isChildDirected))
     }
     
     /// Indicates the CCPA status both as a boolean and as an IAB US privacy string.
     /// - parameter hasGivenConsent: A boolean indicating if the user has given consent.
     /// - parameter privacyString: An IAB-compliant string indicating the CCPA status.
-    func setCCPAConsent(hasGivenConsent: Bool, privacyString: String?) {
+    func setCCPA(hasGivenConsent: Bool, privacyString: String) {
         /// If CCPA consent has been given, send an empty Array. Otherwise, the Array must contain the String "LDU".
         /// By setting country and state to values of 0, this instructs Meta Audience Network  to perform the geolocation themselves.
         /// https://developers.facebook.com/docs/audience-network/support/faq/ccpa
