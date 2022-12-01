@@ -52,6 +52,7 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
             isTrackingEnabled = ASIdentifierManager.shared().isAdvertisingTrackingEnabled
         }
         FBAdSettings.setAdvertiserTrackingEnabled(isTrackingEnabled)
+        log(.privacyUpdated(setting: "advertiserTrackingEnabled", value: isTrackingEnabled))
 
         let settings = FBAdInitSettings(placementIDs: [], mediationService: "Helium")
         
