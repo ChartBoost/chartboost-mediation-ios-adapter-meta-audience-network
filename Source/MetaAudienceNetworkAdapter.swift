@@ -9,6 +9,8 @@ import Foundation
 import HeliumSdk
 import UIKit
 import FBAudienceNetwork
+import AdSupport
+import AppTrackingTransparency
 
 /// The Helium Meta Audience Network adapter.
 final class MetaAudienceNetworkAdapter: PartnerAdapter {
@@ -38,6 +40,20 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
     /// - parameter completion: Closure to be performed by the adapter when it's done setting up. It should include an error indicating the cause for failure or `nil` if the operation finished successfully.
     func setUp(with configuration: PartnerConfiguration, completion: @escaping (Error?) -> Void) {
         log(.setUpStarted)
+
+        // Apply App Tracking Transparency setting
+        // Documentation at: https://developers.facebook.com/docs/app-events/guides/advertising-tracking-enabled
+        let isTrackingEnabled: Bool
+        if #available(iOS 14, *) {
+            // ATT only available in iOS 14+
+            isTrackingEnabled = ATTrackingManager.trackingAuthorizationStatus == .authorized
+        }
+        else {
+            isTrackingEnabled = ASIdentifierManager.shared().isAdvertisingTrackingEnabled
+        }
+        FBAdSettings.setAdvertiserTrackingEnabled(isTrackingEnabled)
+        log(.privacyUpdated(setting: "advertiserTrackingEnabled", value: isTrackingEnabled))
+
         let settings = FBAdInitSettings(placementIDs: [], mediationService: "Helium")
         
         FBAudienceNetworkAds.initialize(with: settings) { result in
