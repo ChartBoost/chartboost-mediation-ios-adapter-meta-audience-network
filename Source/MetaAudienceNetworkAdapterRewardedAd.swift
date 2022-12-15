@@ -37,7 +37,9 @@ final class MetaAudienceNetworkAdapterRewardedAd: MetaAudienceNetworkAdapterAd, 
         let ad = FBRewardedVideoAd(placementID: request.partnerPlacement)
         self.ad = ad
         ad.delegate = self
-        ad.load(withBidPayload: bidPayload)
+        DispatchQueue.main.async {
+            ad.load(withBidPayload: bidPayload)
+        }
     }
     
     /// Shows a loaded ad.
@@ -48,9 +50,11 @@ final class MetaAudienceNetworkAdapterRewardedAd: MetaAudienceNetworkAdapterAd, 
         log(.showStarted)
         if let ad = ad {
             if (ad.isAdValid) {
-                ad.show(fromRootViewController: viewController)
-                log(.showSucceeded)
-                completion(.success([:]))
+                DispatchQueue.main.async {
+                    ad.show(fromRootViewController: viewController)
+                    self.log(.showSucceeded)
+                    completion(.success([:]))
+                }
             } else {
                 let error = error(.showFailure, description: "Ad is invalid.")
                 log(.showFailed(error))

@@ -43,7 +43,9 @@ final class MetaAudienceNetworkAdapterBannerAd: MetaAudienceNetworkAdapterAd, Pa
         self.ad = ad
         ad.delegate = self
         ad.frame = CGRect(origin: .zero, size: adSize.size)
-        ad.loadAd(withBidPayload: bidPayload)
+        DispatchQueue.main.async {
+            ad.loadAd(withBidPayload: bidPayload)
+        }
     }
     
     /// Shows a loaded ad.
