@@ -50,11 +50,9 @@ final class MetaAudienceNetworkAdapterRewardedAd: MetaAudienceNetworkAdapterAd, 
         log(.showStarted)
         if let ad = ad {
             if (ad.isAdValid) {
-                DispatchQueue.main.async {
-                    ad.show(fromRootViewController: viewController)
-                    self.log(.showSucceeded)
-                    completion(.success([:]))
-                }
+                ad.show(fromRootViewController: viewController)
+                log(.showSucceeded)
+                completion(.success([:]))
             } else {
                 let error = error(.showFailure, description: "Ad is invalid.")
                 log(.showFailed(error))

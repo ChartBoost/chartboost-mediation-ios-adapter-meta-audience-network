@@ -39,34 +39,34 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
     /// - parameter configuration: Configuration data for the adapter to set up.
     /// - parameter completion: Closure to be performed by the adapter when it's done setting up. It should include an error indicating the cause for failure or `nil` if the operation finished successfully.
     func setUp(with configuration: PartnerConfiguration, completion: @escaping (Error?) -> Void) {
-        log(.setUpStarted)
-
-        // Apply App Tracking Transparency setting
-        // Documentation at: https://developers.facebook.com/docs/app-events/guides/advertising-tracking-enabled
-        let isTrackingEnabled: Bool
-        if #available(iOS 14, *) {
-            // ATT only available in iOS 14+
-            isTrackingEnabled = ATTrackingManager.trackingAuthorizationStatus == .authorized
-        }
-        else {
-            isTrackingEnabled = ASIdentifierManager.shared().isAdvertisingTrackingEnabled
-        }
-        FBAdSettings.setAdvertiserTrackingEnabled(isTrackingEnabled)
-        log(.privacyUpdated(setting: "advertiserTrackingEnabled", value: isTrackingEnabled))
-
-        let settings = FBAdInitSettings(placementIDs: [], mediationService: "Helium")
-        
-        FBAudienceNetworkAds.initialize(with: settings) { result in
-            if (result.isSuccess) {
-                self.log(.setUpSucceded)
-                completion(nil)
-            } else {
-                let error = self.error(.setUpFailure, description: result.message)
-                self.log(.setUpFailed(error))
-                
-                completion(error)
-            }
-        }
+//        log(.setUpStarted)
+//
+//        // Apply App Tracking Transparency setting
+//        // Documentation at: https://developers.facebook.com/docs/app-events/guides/advertising-tracking-enabled
+//        let isTrackingEnabled: Bool
+//        if #available(iOS 14, *) {
+//            // ATT only available in iOS 14+
+//            isTrackingEnabled = ATTrackingManager.trackingAuthorizationStatus == .authorized
+//        }
+//        else {
+//            isTrackingEnabled = ASIdentifierManager.shared().isAdvertisingTrackingEnabled
+//        }
+//        FBAdSettings.setAdvertiserTrackingEnabled(isTrackingEnabled)
+//        log(.privacyUpdated(setting: "advertiserTrackingEnabled", value: isTrackingEnabled))
+//
+//        let settings = FBAdInitSettings(placementIDs: [], mediationService: "Helium")
+//        
+//        FBAudienceNetworkAds.initialize(with: settings) { result in
+//            if (result.isSuccess) {
+//                self.log(.setUpSucceded)
+//                completion(nil)
+//            } else {
+//                let error = self.error(.setUpFailure, description: result.message)
+//                self.log(.setUpFailed(error))
+//                
+//                completion(error)
+//            }
+//        }
     }
     
     /// Fetches bidding tokens needed for the partner to participate in an auction.
