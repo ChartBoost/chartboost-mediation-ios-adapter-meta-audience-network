@@ -61,7 +61,7 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
                 self.log(.setUpSucceded)
                 completion(nil)
             } else {
-                let error = self.error(.setUpFailure, description: result.message)
+                let error = self.error(.initializationFailurePartnerNotIntegrated, description: result.message)
                 self.log(.setUpFailed(error))
                 
                 completion(error)
@@ -77,7 +77,7 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
         
         let bidderToken = FBAdSettings.bidderToken
         if bidderToken.isEmpty {
-            log(.fetchBidderInfoFailed(request, error: error(.fetchBidderInfoFailure(request))))
+            log(.fetchBidderInfoFailed(request, error: error(.prebidFailurePartnerNotIntegrated)))
         } else {
             log(.fetchBidderInfoSucceeded(request))
         }
@@ -126,7 +126,7 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
         case .banner:
             return MetaAudienceNetworkAdapterBannerAd(adapter: self, request: request, delegate: delegate)
         @unknown default:
-            throw error(.adFormatNotSupported(request))
+            throw error(.loadFailureUnsupportedAdFormat)
         }
     }
 }
