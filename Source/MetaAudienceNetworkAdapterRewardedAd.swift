@@ -77,7 +77,7 @@ extension MetaAudienceNetworkAdapterRewardedAd: FBRewardedVideoAdDelegate {
     }
     
     func didFailWithError(rewardedVideoAd: FBRewardedVideoAd, partnerError: NSError) {
-        let error = error(.loadFailureException, error: partnerError)
+        let error = error(.loadFailureUnknown, error: partnerError)
         log(.loadFailed(error))
         loadCompletion?(.failure(error)) ?? log(.loadResultIgnored)
         loadCompletion = nil
