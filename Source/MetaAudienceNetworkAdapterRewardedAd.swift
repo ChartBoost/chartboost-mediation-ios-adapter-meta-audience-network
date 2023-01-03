@@ -27,7 +27,7 @@ final class MetaAudienceNetworkAdapterRewardedAd: MetaAudienceNetworkAdapterAd, 
         
         /// Because Meta Audience Network is bidding-only, validate the bid payload and fail early if it is empty.
         guard let bidPayload = request.adm, !bidPayload.isEmpty else {
-            let error = error(.noBidPayload)
+            let error = error(.loadFailureInvalidAdMarkup)
             log(.loadFailed(error))
             return completion(.failure(error))
         }
@@ -54,12 +54,12 @@ final class MetaAudienceNetworkAdapterRewardedAd: MetaAudienceNetworkAdapterAd, 
                 log(.showSucceeded)
                 completion(.success([:]))
             } else {
-                let error = error(.showFailure, description: "Ad is invalid.")
+                let error = error(.showFailureUnknown, description: "Ad is invalid.")
                 log(.showFailed(error))
                 completion(.failure(error))
             }
         } else {
-            let error = error(.noAdReadyToShow)
+            let error = error(.showFailureAdNotReady)
             log(.showFailed(error))
             completion(.failure(error))
         }
@@ -77,7 +77,7 @@ extension MetaAudienceNetworkAdapterRewardedAd: FBRewardedVideoAdDelegate {
     }
     
     func didFailWithError(rewardedVideoAd: FBRewardedVideoAd, partnerError: NSError) {
-        let error = error(.loadFailure, error: partnerError)
+        let error = error(.loadFailureUnknown, error: partnerError)
         log(.loadFailed(error))
         loadCompletion?(.failure(error)) ?? log(.loadResultIgnored)
         loadCompletion = nil
