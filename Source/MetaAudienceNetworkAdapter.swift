@@ -61,7 +61,7 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
                 self.log(.setUpSucceded)
                 completion(nil)
             } else {
-                let error = self.error(.initializationFailurePartnerNotIntegrated, description: result.message)
+                let error = self.error(.initializationFailureUnknown, description: result.message)
                 self.log(.setUpFailed(error))
                 
                 completion(error)
@@ -77,7 +77,7 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
         
         let bidderToken = FBAdSettings.bidderToken
         if bidderToken.isEmpty {
-            log(.fetchBidderInfoFailed(request, error: error(.prebidFailurePartnerNotIntegrated)))
+            log(.fetchBidderInfoFailed(request, error: error(.prebidFailureUnknown)))
         } else {
             log(.fetchBidderInfoSucceeded(request))
         }
