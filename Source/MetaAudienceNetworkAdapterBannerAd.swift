@@ -86,9 +86,8 @@ extension MetaAudienceNetworkAdapterBannerAd: FBAdViewDelegate {
     }
     
     func didFailWithError(adView: FBAdView, partnerError: NSError) {
-        let error = error(.loadFailureUnknown, error: partnerError)
-        log(.loadFailed(error))
-        loadCompletion?(.failure(error)) ?? log(.loadResultIgnored)
+        log(.loadFailed(partnerError))
+        loadCompletion?(.failure(partnerError)) ?? log(.loadResultIgnored)
         loadCompletion = nil
     }
     
