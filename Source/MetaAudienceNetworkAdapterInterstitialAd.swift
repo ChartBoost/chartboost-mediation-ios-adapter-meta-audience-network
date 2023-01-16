@@ -76,9 +76,9 @@ extension MetaAudienceNetworkAdapterInterstitialAd: FBInterstitialAdDelegate {
         loadCompletion = nil
     }
     
-    func didFailWithError(interstitialAd: FBInterstitialAd, partnerError: NSError) {
-        log(.loadFailed(partnerError))
-        loadCompletion?(.failure(partnerError)) ?? log(.loadResultIgnored)
+    func interstitialAd(_ interstitialAd: FBInterstitialAd, didFailWithError error: Error) {
+        log(.loadFailed(error))
+        loadCompletion?(.failure(error)) ?? log(.loadResultIgnored)
         loadCompletion = nil
     }
     
