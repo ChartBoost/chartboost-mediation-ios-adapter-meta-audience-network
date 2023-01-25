@@ -1,6 +1,6 @@
 # Chartboost Mediation Meta Audience Network Adapter
 
-The Chartboost Mediation Meta Audience Network adapter mediates the Meta Audience Network SDK into the Chartboost Mediation SDK.
+The Chartboost Mediation Meta Audience Network adapter mediates Meta Audience Network via the Chartboost Mediation SDK.
 
 ## Minimum Requirements
 
