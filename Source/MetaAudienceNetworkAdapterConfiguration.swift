@@ -5,7 +5,7 @@
 
 //
 //  MetaAudienceNetworkAdapterConfiguration.swift
-//  ChartboostHeliumAdapterMetaAudienceNetwork
+//  ChartboostMediationAdapterMetaAudienceNetwork
 //
 //  Created by Vu Chau on 8/31/22.
 //

@@ -5,7 +5,7 @@
 
 //
 //  MetaAudienceNetworkAdapterInterstitialAd.swift
-//  ChartboostHeliumAdapterMetaAudienceNetwork
+//  ChartboostMediationAdapterMetaAudienceNetwork
 //
 //  Created by Vu Chau on 8/31/22.
 //
@@ -14,7 +14,7 @@ import ChartboostMediationSDK
 import FBAudienceNetwork
 import Foundation
 
-/// The Helium Meta Audience Network adapter interstitial ad.
+/// The Chartboost Mediation Meta Audience Network adapter interstitial ad.
 final class MetaAudienceNetworkAdapterInterstitialAd: MetaAudienceNetworkAdapterAd, PartnerAd {
     
     /// The Meta Audience Network SDK ad instance.

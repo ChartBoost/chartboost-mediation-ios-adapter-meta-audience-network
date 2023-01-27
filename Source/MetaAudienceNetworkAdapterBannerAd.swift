@@ -5,7 +5,7 @@
 
 //
 //  MetaAudienceNetworkAdapterBannerAd.swift
-//  ChartboostHeliumAdapterMetaAudienceNetwork
+//  ChartboostMediationAdapterMetaAudienceNetwork
 //
 //  Created by Vu Chau on 8/31/22.
 //
@@ -14,7 +14,7 @@ import ChartboostMediationSDK
 import FBAudienceNetwork
 import Foundation
 
-/// The Helium Meta Audience Network adapter banner ad.
+/// The Chartboost Mediation Meta Audience Network adapter banner ad.
 final class MetaAudienceNetworkAdapterBannerAd: MetaAudienceNetworkAdapterAd, PartnerAd {
     
     /// The Meta Audience Network SDK ad instance.
@@ -61,8 +61,8 @@ final class MetaAudienceNetworkAdapterBannerAd: MetaAudienceNetworkAdapterAd, Pa
         // no-op
     }
     
-    /// Map Helium's banner sizes to the Meta Audience Network SDK's supported sizes.
-    /// - Parameter size: The Helium's banner size.
+    /// Map Chartboost Mediation's banner sizes to the Meta Audience Network SDK's supported sizes.
+    /// - Parameter size: The Chartboost Mediation's banner size.
     /// - Returns: The corresponding Meta Audience Network banner size.
     private func metaAudienceNetworkBannerAdSize(with size: CGSize?) -> FBAdSize {
         let height = size?.height ?? 50
