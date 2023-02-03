@@ -1,14 +1,7 @@
 // Copyright 2022-2023 Chartboost, Inc.
-// 
+//
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
-
-//
-//  MetaAudienceNetworkAdapter.swift
-//  ChartboostMediationAdapterMetaAudienceNetwork
-//
-//  Created by Vu Chau on 8/31/22.
-//
 
 import AdSupport
 import AppTrackingTransparency
