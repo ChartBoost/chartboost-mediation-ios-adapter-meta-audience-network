@@ -92,6 +92,7 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
     /// Indicates if the user is subject to COPPA or not.
     /// - parameter isChildDirected: `true` if the user is subject to COPPA, `false` otherwise.
     func setCOPPA(isChildDirected: Bool) {
+        // See https://developers.facebook.com/docs/audience-network/optimization/best-practices/coppa
         FBAdSettings.isMixedAudience = isChildDirected
         log(.privacyUpdated(setting: "isMixedAudience", value: isChildDirected))
     }
@@ -102,7 +103,7 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
     func setCCPA(hasGivenConsent: Bool, privacyString: String) {
         /// If CCPA consent has been given, send an empty Array. Otherwise, the Array must contain the String "LDU".
         /// By setting country and state to values of 0, this instructs Meta Audience Network  to perform the geolocation themselves.
-        /// https://developers.facebook.com/docs/audience-network/support/faq/ccpa
+        /// See https://developers.facebook.com/docs/audience-network/optimization/best-practices/ccpa
         let dataProcessingOptions = hasGivenConsent ? [] : [String.limitedDataUsage]
         FBAdSettings.setDataProcessingOptions(dataProcessingOptions, country: 0, state: 0)
         log(.privacyUpdated(setting: "dataProcessingOptions", value: dataProcessingOptions))
