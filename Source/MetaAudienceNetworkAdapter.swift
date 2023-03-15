@@ -122,12 +122,15 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
             return MetaAudienceNetworkAdapterInterstitialAd(adapter: self, request: request, delegate: delegate)
         case .rewarded:
             return MetaAudienceNetworkAdapterRewardedAd(adapter: self, request: request, delegate: delegate)
-        case .rewardedInterstitial:
-            return MetaAudienceNetworkAdapterRewardedInterstitialAd(adapter: self, request: request, delegate: delegate)
         case .banner:
             return MetaAudienceNetworkAdapterBannerAd(adapter: self, request: request, delegate: delegate)
         default:
-            throw error(.loadFailureUnsupportedAdFormat)
+            // Not using the `.rewardedInterstitial` case directly to maintain backward compatibility with Chartboost Mediation 4.0
+            if request.format.rawValue == "rewardedInterstitial" {
+                return MetaAudienceNetworkAdapterRewardedInterstitialAd(adapter: self, request: request, delegate: delegate)
+            } else {
+                throw error(.loadFailureUnsupportedAdFormat)
+            }
         }
     }
 }
