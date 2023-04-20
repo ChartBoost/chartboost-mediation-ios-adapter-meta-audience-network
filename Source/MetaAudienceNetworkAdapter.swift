@@ -124,7 +124,7 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
             return MetaAudienceNetworkAdapterRewardedAd(adapter: self, request: request, delegate: delegate)
         case .banner:
             return MetaAudienceNetworkAdapterBannerAd(adapter: self, request: request, delegate: delegate)
-        @unknown default:
+        default:
             throw error(.loadFailureUnsupportedAdFormat)
         }
     }
