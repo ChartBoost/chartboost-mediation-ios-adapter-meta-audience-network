@@ -5,10 +5,13 @@
 
 import Foundation
 import FBAudienceNetwork
+import os.log
 
 /// A list of externally configurable properties pertaining to the partner SDK that can be retrieved and set by publishers.
 @objc public class MetaAudienceNetworkAdapterConfiguration: NSObject {
-    
+
+    private static let log = OSLog(subsystem: "com.chartboost.mediation.adapter.facebook", category: "Configuration")
+
     /// Flag that can optionally be set to enable Meta Audience Network's test mode. Make sure to disable test mode in production.
     /// Disabled by default.
     @objc public static var testMode: Bool = false {
@@ -18,7 +21,9 @@ import FBAudienceNetwork
             } else {
                 FBAdSettings.clearTestDevices()
             }
-            print("Meta Audience Network SDK test mode set to \(testMode)")
+            if #available(iOS 12.0, *) {
+                os_log(.debug, log: log, "Meta Audience Network SDK test mode set to %{public}s", "\(testMode)")
+            }
         }
     }
     
@@ -27,7 +32,9 @@ import FBAudienceNetwork
     @objc public static var verboseLogging: Bool = false {
         didSet {
             FBAdSettings.setLogLevel(verboseLogging ? .verbose : .log)
-            print("Meta Audience Network SDK verbose logging set to \(verboseLogging)")
+            if #available(iOS 12.0, *) {
+                os_log(.debug, log: log, "Meta Audience Network SDK verbose logging set to %{public}s", "\(verboseLogging)")
+            }
         }
     }
 }
