@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
   spec.name        = 'ChartboostMediationAdapterMetaAudienceNetwork'
-  spec.version     = '4.6.14.0.1'
+  spec.version     = '4.6.14.0.0'
   spec.license     = { :type => 'MIT', :file => 'LICENSE.md' }
   spec.homepage    = 'https://github.com/ChartBoost/chartboost-mediation-ios-adapter-meta-audience-network'
   spec.authors     = { 'Chartboost' => 'https://www.chartboost.com/' }
@@ -14,7 +14,7 @@ Pod::Spec.new do |spec|
 
   # Minimum supported versions
   spec.swift_version         = '5.0'
-  spec.ios.deployment_target = '10.0'
+  spec.ios.deployment_target = '11.0'
 
   # System frameworks used
   spec.ios.frameworks = ['Foundation', 'SafariServices', 'UIKit', 'WebKit']
