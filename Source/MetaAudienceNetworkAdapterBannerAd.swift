@@ -29,18 +29,24 @@ final class MetaAudienceNetworkAdapterBannerAd: MetaAudienceNetworkAdapterAd, Pa
             log(.loadFailed(error))
             return completion(.failure(error))
         }
+
+        // Fail if we cannot fit a fixed size banner in the requested size.
+        guard let (_, partnerSize) = fixedBannerSize(for: request.size ?? IABStandardAdSize) else {
+            let error = error(.loadFailureInvalidBannerSize)
+            log(.loadFailed(error))
+            return completion(.failure(error))
+        }
         
         loadCompletion = completion
-        
-        let adSize = metaAudienceNetworkBannerAdSize(with: request.size)
+
         let ad = FBAdView(
             placementID: request.partnerPlacement,
-            adSize: adSize,
+            adSize: partnerSize,
             rootViewController: viewController
         )
         self.ad = ad
         ad.delegate = self
-        ad.frame = CGRect(origin: .zero, size: adSize.size)
+        ad.frame = CGRect(origin: .zero, size: partnerSize.size)
         DispatchQueue.main.async {
             ad.loadAd(withBidPayload: bidPayload)
         }
@@ -53,24 +59,6 @@ final class MetaAudienceNetworkAdapterBannerAd: MetaAudienceNetworkAdapterAd, Pa
     func show(with viewController: UIViewController, completion: @escaping (Result<PartnerEventDetails, Error>) -> Void) {
         // no-op
     }
-    
-    /// Map Chartboost Mediation's banner sizes to the Meta Audience Network SDK's supported sizes.
-    /// - Parameter size: The Chartboost Mediation's banner size.
-    /// - Returns: The corresponding Meta Audience Network banner size.
-    private func metaAudienceNetworkBannerAdSize(with size: CGSize?) -> FBAdSize {
-        let height = size?.height ?? 50
-        
-        switch height {
-        case 50...89:
-            return kFBAdSizeHeight50Banner
-        case 90...249:
-            return kFBAdSizeHeight90Banner
-        case 250...:
-            return kFBAdSizeHeight250Rectangle
-        default:
-            return kFBAdSizeHeight50Banner
-        }
-    }
 }
 
 // MARK: - FBAdViewDelegate
@@ -79,7 +67,14 @@ extension MetaAudienceNetworkAdapterBannerAd: FBAdViewDelegate {
     
     func adViewDidLoad(_ adView: FBAdView) {
         log(.loadSucceeded)
-        loadCompletion?(.success([:])) ?? log(.loadResultIgnored)
+
+        var partnerDetails: [String: String] = [:]
+        if let (loadedSize, _) = fixedBannerSize(for: request.size ?? IABStandardAdSize) {
+            partnerDetails["bannerWidth"] = "\(loadedSize.width)"
+            partnerDetails["bannerHeight"] = "\(loadedSize.height)"
+            partnerDetails["bannerType"] = "0" // Fixed banner
+        }
+        loadCompletion?(.success(partnerDetails)) ?? log(.loadResultIgnored)
         loadCompletion = nil
     }
     
@@ -97,5 +92,26 @@ extension MetaAudienceNetworkAdapterBannerAd: FBAdViewDelegate {
     func adViewDidClick(_ adView: FBAdView) {
         log(.didClick(error: nil))
         delegate?.didClick(self, details: [:]) ?? log(.delegateUnavailable)
+    }
+}
+
+// MARK: - Helpers
+extension MetaAudienceNetworkAdapterBannerAd {
+    private func fixedBannerSize(for requestedSize: CGSize) -> (size: CGSize, partnerSize: FBAdSize)? {
+        let sizes: [(size: CGSize, partnerSize: FBAdSize)] = [
+            (size: IABLeaderboardAdSize, partnerSize: kFBAdSizeHeight90Banner),
+            (size: IABMediumAdSize, partnerSize: kFBAdSizeHeight250Rectangle),
+            (size: IABStandardAdSize, partnerSize: kFBAdSizeHeight50Banner)
+        ]
+        // Find the largest size that can fit in the requested size.
+        for (size, partnerSize) in sizes {
+            // If height is 0, the pub has requested an ad of any height, so only the width matters.
+            if requestedSize.width >= size.width &&
+                (size.height == 0 || requestedSize.height >= size.height) {
+                return (size, partnerSize)
+            }
+        }
+        // The requested size cannot fit any fixed size banners.
+        return nil
     }
 }
