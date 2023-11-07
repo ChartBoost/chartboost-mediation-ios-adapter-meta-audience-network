@@ -10,6 +10,7 @@ Pod::Spec.new do |spec|
   # Source
   spec.module_name  = 'ChartboostMediationAdapterMetaAudienceNetwork'
   spec.source       = { :git => 'https://github.com/ChartBoost/chartboost-mediation-ios-adapter-meta-audience-network.git', :tag => spec.version }
+  spec.resource_bundles = { 'ChartboostMediationAdapterMetaAudienceNetwork' => ['PrivacyInfo.xcprivacy'] }
   spec.source_files = 'Source/**/*.{swift}'
 
   # Minimum supported versions
