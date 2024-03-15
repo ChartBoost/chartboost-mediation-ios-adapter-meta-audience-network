@@ -4,6 +4,7 @@ Note the first digit of every adapter version corresponds to the major version o
 Adapters are compatible with any Chartboost Mediation SDK version within that major version.
 
 ### 4.6.15.0.0
+- The minimum deployment target compatible with this adapter is now iOS 12.
 - This version of the adapter has been certified with FBAudienceNetwork 6.15.0.
 
 ### 4.6.14.0.1
