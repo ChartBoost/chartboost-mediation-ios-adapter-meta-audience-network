@@ -22,7 +22,7 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
     let adapterVersion = "4.6.15.0.0"
     
     /// The partner's unique identifier.
-    let partnerIdentifier = "facebook"
+    let partnerID = "facebook"
     
     /// The human-friendly partner name.
     let partnerDisplayName = "Meta Audience Network"
@@ -36,7 +36,7 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
     /// Does any setup needed before beginning to load ads.
     /// - parameter configuration: Configuration data for the adapter to set up.
     /// - parameter completion: Closure to be performed by the adapter when it's done setting up. It should include an error indicating the cause for failure or `nil` if the operation finished successfully.
-    func setUp(with configuration: PartnerConfiguration, completion: @escaping (Error?) -> Void) {
+    func setUp(with configuration: PartnerConfiguration, completion: @escaping (Result<PartnerDetails, Error>) -> Void) {
         log(.setUpStarted)
         
         // Apply App Tracking Transparency setting
@@ -57,12 +57,11 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
         FBAudienceNetworkAds.initialize(with: settings) { result in
             if (result.isSuccess) {
                 self.log(.setUpSucceded)
-                completion(nil)
+                completion(.success([:]))
             } else {
                 let error = self.error(.initializationFailureUnknown, description: result.message)
                 self.log(.setUpFailed(error))
-                
-                completion(error)
+                completion(.failure(error))
             }
         }
     }
@@ -70,16 +69,11 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
     /// Fetches bidding tokens needed for the partner to participate in an auction.
     /// - parameter request: Information about the ad load request.
     /// - parameter completion: Closure to be performed with the fetched info.
-    func fetchBidderInformation(request: PreBidRequest, completion: @escaping ([String : String]?) -> Void) {
+    func fetchBidderInformation(request: PartnerAdPreBidRequest, completion: @escaping (Result<[String : String], Error>) -> Void) {
         log(.fetchBidderInfoStarted(request))
-        
         let bidderToken = FBAdSettings.bidderToken
-        if bidderToken.isEmpty {
-            log(.fetchBidderInfoFailed(request, error: error(.prebidFailureUnknown)))
-        } else {
-            log(.fetchBidderInfoSucceeded(request))
-        }
-        completion(["buyeruid": bidderToken])
+        log(.fetchBidderInfoSucceeded(request))
+        completion(.success(bidderToken.isEmpty ? [:] : ["buyeruid": bidderToken]))
     }
     
     /// Indicates if GDPR applies or not and the user's GDPR consent status.
@@ -119,21 +113,16 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
     func makeAd(request: PartnerAdLoadRequest, delegate: PartnerAdDelegate) throws -> PartnerAd {
         // This partner supports multiple loads for the same partner placement.
         switch request.format {
-        case .interstitial:
+        case PartnerAdFormats.interstitial:
             return MetaAudienceNetworkAdapterInterstitialAd(adapter: self, request: request, delegate: delegate)
-        case .rewarded:
+        case PartnerAdFormats.rewarded:
             return MetaAudienceNetworkAdapterRewardedAd(adapter: self, request: request, delegate: delegate)
-        case .banner:
+        case PartnerAdFormats.rewardedInterstitial:
+            return MetaAudienceNetworkAdapterRewardedInterstitialAd(adapter: self, request: request, delegate: delegate)
+        case PartnerAdFormats.banner, PartnerAdFormats.adaptiveBanner:
             return MetaAudienceNetworkAdapterBannerAd(adapter: self, request: request, delegate: delegate)
         default:
-            // Not using the `.rewardedInterstitial` or `.adaptiveBanner` cases directly to maintain backward compatibility with Chartboost Mediation 4.0
-            if request.format.rawValue == "rewarded_interstitial" {
-                return MetaAudienceNetworkAdapterRewardedInterstitialAd(adapter: self, request: request, delegate: delegate)
-            } else if request.format.rawValue == "adaptive_banner" {
-                return MetaAudienceNetworkAdapterBannerAd(adapter: self, request: request, delegate: delegate)
-            } else {
-                throw error(.loadFailureUnsupportedAdFormat)
-            }
+            throw error(.loadFailureUnsupportedAdFormat)
         }
     }
 }
