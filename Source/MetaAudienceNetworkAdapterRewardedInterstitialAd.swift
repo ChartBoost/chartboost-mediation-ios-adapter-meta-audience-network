@@ -8,18 +8,10 @@ import FBAudienceNetwork
 import Foundation
 
 /// The Chartboost Mediation Meta Audience Network adapter rewarded interstitial ad.
-final class MetaAudienceNetworkAdapterRewardedInterstitialAd: MetaAudienceNetworkAdapterAd, PartnerAd {
+final class MetaAudienceNetworkAdapterRewardedInterstitialAd: MetaAudienceNetworkAdapterAd, PartnerFullscreenAd {
     
     /// The Meta Audience Network SDK ad instance.
     private var ad: FBRewardedInterstitialAd?
-    
-    /// The partner ad view to display inline. E.g. a banner view.
-    /// Should be nil for full-screen ads.
-    var inlineView: UIView? { nil }
-
-    /// The loaded partner ad banner size.
-    /// Should be `nil` for full-screen ads.
-    var bannerSize: PartnerBannerSize? { nil }
 
     /// Loads an ad.
     /// - parameter viewController: The view controller on which the ad will be presented on. Needed on load for some banners.
