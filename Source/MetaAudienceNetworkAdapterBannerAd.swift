@@ -35,7 +35,7 @@ final class MetaAudienceNetworkAdapterBannerAd: MetaAudienceNetworkAdapterAd, Pa
         }
 
         // Fail if we cannot fit a fixed size banner in the requested size.
-        guard let (loadedSize, partnerSize) = fixedBannerSize(for: request.size ?? IABStandardAdSize) else {
+        guard let (loadedSize, partnerSize) = fixedBannerSize(for: request.bannerSize) else {
             let error = error(.loadFailureInvalidBannerSize)
             log(.loadFailed(error))
             return completion(.failure(error))
@@ -95,7 +95,10 @@ extension MetaAudienceNetworkAdapterBannerAd: FBAdViewDelegate {
 
 // MARK: - Helpers
 extension MetaAudienceNetworkAdapterBannerAd {
-    private func fixedBannerSize(for requestedSize: CGSize) -> (size: CGSize, partnerSize: FBAdSize)? {
+    private func fixedBannerSize(for requestedSize: BannerSize?) -> (size: CGSize, partnerSize: FBAdSize)? {
+        guard let requestedSize else {
+            return (IABStandardAdSize, kFBAdSizeHeight50Banner)
+        }
         let sizes: [(size: CGSize, partnerSize: FBAdSize)] = [
             (size: IABLeaderboardAdSize, partnerSize: kFBAdSizeHeight90Banner),
             (size: IABMediumAdSize, partnerSize: kFBAdSizeHeight250Rectangle),
@@ -104,8 +107,8 @@ extension MetaAudienceNetworkAdapterBannerAd {
         // Find the largest size that can fit in the requested size.
         for (size, partnerSize) in sizes {
             // If height is 0, the pub has requested an ad of any height, so only the width matters.
-            if requestedSize.width >= size.width &&
-                (size.height == 0 || requestedSize.height >= size.height) {
+            if requestedSize.size.width >= size.width &&
+                (size.height == 0 || requestedSize.size.height >= size.height) {
                 return (size, partnerSize)
             }
         }
