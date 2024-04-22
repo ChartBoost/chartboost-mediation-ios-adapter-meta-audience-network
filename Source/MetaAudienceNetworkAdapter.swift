@@ -114,7 +114,7 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
     /// - parameter delegate: The delegate that will receive ad life-cycle notifications.
     func makeBannerAd(request: PartnerAdLoadRequest, delegate: PartnerAdDelegate) throws -> PartnerBannerAd {
         // This partner supports multiple loads for the same partner placement.
-        return MetaAudienceNetworkAdapterBannerAd(adapter: self, request: request, delegate: delegate)
+        MetaAudienceNetworkAdapterBannerAd(adapter: self, request: request, delegate: delegate)
     }
 
     /// Creates a new ad object in charge of communicating with a single partner SDK ad instance.
