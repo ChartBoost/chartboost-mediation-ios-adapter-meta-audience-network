@@ -8,18 +8,15 @@ import FBAudienceNetwork
 import Foundation
 
 /// The Chartboost Mediation Meta Audience Network adapter banner ad.
-final class MetaAudienceNetworkAdapterBannerAd: MetaAudienceNetworkAdapterAd, PartnerAd {
-    
+final class MetaAudienceNetworkAdapterBannerAd: MetaAudienceNetworkAdapterAd, PartnerBannerAd {
+    /// The partner banner ad view to display.
+    var view: UIView? { ad }
+
+    /// The loaded partner ad banner size.
+    var size: PartnerBannerSize?
+
     /// The Meta Audience Network SDK ad instance.
     private var ad: FBAdView?
-    
-    /// The partner ad view to display inline. E.g. a banner view.
-    /// Should be nil for full-screen ads.
-    var inlineView: UIView? { ad }
-    
-    /// The loaded partner ad banner size.
-    /// Should be `nil` for full-screen ads.
-    var bannerSize: PartnerBannerSize?
 
     /// Loads an ad.
     /// - parameter viewController: The view controller on which the ad will be presented on. Needed on load for some banners.
@@ -41,7 +38,7 @@ final class MetaAudienceNetworkAdapterBannerAd: MetaAudienceNetworkAdapterAd, Pa
             return completion(.failure(error))
         }
         
-        bannerSize = PartnerBannerSize(size: loadedSize, type: .fixed)
+        size = PartnerBannerSize(size: loadedSize, type: .fixed)
         loadCompletion = completion
 
         let ad = FBAdView(
@@ -55,14 +52,6 @@ final class MetaAudienceNetworkAdapterBannerAd: MetaAudienceNetworkAdapterAd, Pa
         DispatchQueue.main.async {
             ad.loadAd(withBidPayload: bidPayload)
         }
-    }
-    
-    /// Shows a loaded ad.
-    /// It will never get called for banner ads. You may leave the implementation blank for that ad format.
-    /// - parameter viewController: The view controller on which the ad will be presented on.
-    /// - parameter completion: Closure to be performed once the ad has been shown.
-    func show(with viewController: UIViewController, completion: @escaping (Result<PartnerDetails, Error>) -> Void) {
-        // no-op
     }
 }
 

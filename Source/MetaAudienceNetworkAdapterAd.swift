@@ -18,11 +18,13 @@ class MetaAudienceNetworkAdapterAd: NSObject {
     var details: PartnerDetails = [:]
 
     /// The ad load request associated to the ad.
-    /// It should be the one provided on `PartnerAdapter.makeAd(request:delegate:)`.
+    /// It should be the one provided on ``PartnerAdapter/makeBannerAd(request:delegate:)``
+    /// or ``PartnerAdapter/makeFullscreenAd(request:delegate:)``.
     let request: PartnerAdLoadRequest
         
     /// The partner ad delegate to send ad life-cycle events to.
-    /// It should be the one provided on `PartnerAdapter.makeAd(request:delegate:)`.
+    /// It should be the one provided on ``PartnerAdapter/makeBannerAd(request:delegate:)``
+    /// or ``PartnerAdapter/makeFullscreenAd(request:delegate:)``.
     weak var delegate: PartnerAdDelegate?
     
     /// The completion handler to notify Chartboost Mediation of ad load completion result.
