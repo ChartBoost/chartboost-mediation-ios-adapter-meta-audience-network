@@ -52,6 +52,10 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
         FBAdSettings.setAdvertiserTrackingEnabled(isTrackingEnabled)
         log(.privacyUpdated(setting: "advertiserTrackingEnabled", value: isTrackingEnabled))
         
+        // Apply initial consents
+        setConsents(configuration.consents, modifiedKeys: Set(configuration.consents.keys))
+        setIsUserUnderage(configuration.isUserUnderage)
+
         let settings = FBAdInitSettings(placementIDs: [], mediationService: "Chartboost")
         
         FBAudienceNetworkAds.initialize(with: settings) { result in
@@ -76,31 +80,28 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
         completion(.success(bidderToken.isEmpty ? [:] : ["buyeruid": bidderToken]))
     }
     
-    /// Indicates if GDPR applies or not and the user's GDPR consent status.
-    /// - parameter applies: `true` if GDPR applies, `false` if not, `nil` if the publisher has not provided this information.
-    /// - parameter status: One of the `GDPRConsentStatus` values depending on the user's preference.
-    func setGDPR(applies: Bool?, status: GDPRConsentStatus) {
-        /// NO-OP. Meta Audience Network automatically handles GDPR.
+    /// Indicates that the user consent has changed.
+    /// - parameter consents: The new consents value, including both modified and unmodified consents.
+    /// - parameter modifiedKeys: A set containing all the keys that changed.
+    func setConsents(_ consents: [ConsentKey: ConsentValue], modifiedKeys: Set<ConsentKey>) {
+        if modifiedKeys.contains(ConsentKeys.ccpaOptIn) {
+            /// If CCPA consent has been given, send an empty Array. Otherwise, the Array must contain the String "LDU".
+            /// By setting country and state to values of 0, this instructs Meta Audience Network to perform the geolocation themselves.
+            /// See https://developers.facebook.com/docs/audience-network/optimization/best-practices/ccpa
+            let hasGivenConsent = consents[ConsentKeys.ccpaOptIn] == ConsentValues.granted
+            let dataProcessingOptions = hasGivenConsent ? [] : [String.limitedDataUsage]
+            FBAdSettings.setDataProcessingOptions(dataProcessingOptions, country: 0, state: 0)
+            log(.privacyUpdated(setting: "dataProcessingOptions", value: dataProcessingOptions))
+        }
+        // Meta Audience Network automatically handles GDPR.
     }
-    
-    /// Indicates if the user is subject to COPPA or not.
-    /// - parameter isChildDirected: `true` if the user is subject to COPPA, `false` otherwise.
-    func setCOPPA(isChildDirected: Bool) {
+
+    /// Indicates that the user is underage signal has changed.
+    /// - parameter isUserUnderage: `true` if the user is underage as determined by the publisher, `false` otherwise.
+    func setIsUserUnderage(_ isUserUnderage: Bool) {
         // See https://developers.facebook.com/docs/audience-network/optimization/best-practices/coppa
-        FBAdSettings.isMixedAudience = isChildDirected
-        log(.privacyUpdated(setting: "isMixedAudience", value: isChildDirected))
-    }
-    
-    /// Indicates the CCPA status both as a boolean and as an IAB US privacy string.
-    /// - parameter hasGivenConsent: A boolean indicating if the user has given consent.
-    /// - parameter privacyString: An IAB-compliant string indicating the CCPA status.
-    func setCCPA(hasGivenConsent: Bool, privacyString: String) {
-        /// If CCPA consent has been given, send an empty Array. Otherwise, the Array must contain the String "LDU".
-        /// By setting country and state to values of 0, this instructs Meta Audience Network  to perform the geolocation themselves.
-        /// See https://developers.facebook.com/docs/audience-network/optimization/best-practices/ccpa
-        let dataProcessingOptions = hasGivenConsent ? [] : [String.limitedDataUsage]
-        FBAdSettings.setDataProcessingOptions(dataProcessingOptions, country: 0, state: 0)
-        log(.privacyUpdated(setting: "dataProcessingOptions", value: dataProcessingOptions))
+        FBAdSettings.isMixedAudience = isUserUnderage
+        log(.privacyUpdated(setting: "isMixedAudience", value: isUserUnderage))
     }
     
     /// Creates a new banner ad object in charge of communicating with a single partner SDK ad instance.
