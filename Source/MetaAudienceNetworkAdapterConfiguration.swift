@@ -28,6 +28,14 @@ import os.log
 
     private static let log = OSLog(subsystem: "com.chartboost.mediation.adapter.facebook", category: "Configuration")
 
+    /// Optional list of placement IDs to pass into Meta Audience Network's initialization settings.
+    /// Empty by default.
+    @objc public static var placementIDs: [String] = [] {
+        didSet {
+            os_log(.debug, log: log, "Meta Audience Network SDK placement IDs set to %{public}s", "\(placementIDs)")
+        }
+    }
+
     /// Flag that can optionally be set to enable Meta Audience Network's test mode. Make sure to disable test mode in production.
     /// Disabled by default.
     @objc public static var testMode: Bool = false {

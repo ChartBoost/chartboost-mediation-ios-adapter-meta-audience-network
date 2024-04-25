@@ -60,8 +60,11 @@ final class MetaAudienceNetworkAdapter: PartnerAdapter {
         FBAdSettings.setAdvertiserTrackingEnabled(isTrackingEnabled)
         log(.privacyUpdated(setting: "advertiserTrackingEnabled", value: isTrackingEnabled))
         
-        let settings = FBAdInitSettings(placementIDs: [], mediationService: "Chartboost")
-        
+        let settings = FBAdInitSettings(
+            placementIDs: MetaAudienceNetworkAdapterConfiguration.placementIDs,
+            mediationService: "Chartboost"
+        )
+
         FBAudienceNetworkAds.initialize(with: settings) { result in
             if (result.isSuccess) {
                 self.log(.setUpSucceded)
