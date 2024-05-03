@@ -32,23 +32,26 @@ final class MetaAudienceNetworkAdapterBannerAd: MetaAudienceNetworkAdapterAd, Pa
         }
 
         // Fail if we cannot fit a fixed size banner in the requested size.
-        guard let (loadedSize, partnerSize) = fixedBannerSize(for: request.bannerSize) else {
+        guard 
+            let requestedSize = request.bannerSize,
+            let fittingSize = BannerSize.largestStandardFixedSizeThatFits(in: requestedSize)
+        else {
             let error = error(.loadFailureInvalidBannerSize)
             log(.loadFailed(error))
             return completion(.failure(error))
         }
         
-        size = PartnerBannerSize(size: loadedSize, type: .fixed)
+        size = PartnerBannerSize(size: fittingSize.size, type: .fixed)
         loadCompletion = completion
 
         let ad = FBAdView(
             placementID: request.partnerPlacement,
-            adSize: partnerSize,
+            adSize: fittingSize.fbAdSize,
             rootViewController: viewController
         )
         self.ad = ad
         ad.delegate = self
-        ad.frame = CGRect(origin: .zero, size: partnerSize.size)
+        ad.frame = CGRect(origin: .zero, size: fittingSize.fbAdSize.size)
         DispatchQueue.main.async {
             ad.loadAd(withBidPayload: bidPayload)
         }
@@ -82,30 +85,17 @@ extension MetaAudienceNetworkAdapterBannerAd: FBAdViewDelegate {
     }
 }
 
-// MARK: - Helpers
-extension MetaAudienceNetworkAdapterBannerAd {
-    private func fixedBannerSize(for requestedSize: BannerSize?) -> (size: CGSize, partnerSize: FBAdSize)? {
-        // Return a default value if no size is specified
-        guard let requestedSize else {
-            return (BannerSize.standard.size, kFBAdSizeHeight50Banner)
-        }
-        // If we can find a size that fits, return that.
-        if let size = BannerSize.largestStandardFixedSizeThatFits(in: requestedSize) {
-            switch size {
-            case .standard:
-                return (BannerSize.standard.size, kFBAdSizeHeight50Banner)
-            case .medium:
-                return (BannerSize.medium.size, kFBAdSizeHeight250Rectangle)
-            case .leaderboard:
-                return (BannerSize.leaderboard.size, kFBAdSizeHeight90Banner)
-            default:
-                // largestStandardFixedSizeThatFits currently only returns .standard, .medium, or .leaderboard,
-                // but if that changes then just default to .standard until this code gets updated.
-                return (BannerSize.standard.size, kFBAdSizeHeight50Banner)
-            }
-        } else {
-            // largestStandardFixedSizeThatFits has returned nil to indicate it couldn't find a fit.
-            return nil
+extension BannerSize {
+    fileprivate var fbAdSize: FBAdSize {
+        switch self {
+        case .standard:
+            kFBAdSizeHeight50Banner
+        case .medium:
+            kFBAdSizeHeight250Rectangle
+        case .leaderboard:
+            kFBAdSizeHeight90Banner
+        default:
+            kFBAdSizeHeight50Banner
         }
     }
 }
