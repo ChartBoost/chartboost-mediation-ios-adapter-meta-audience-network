@@ -3,12 +3,12 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
+import ChartboostMediationSDK
 import Foundation
 import FBAudienceNetwork
-import os.log
 
 /// A list of externally configurable properties pertaining to the partner SDK that can be retrieved and set by publishers.
-@objc public class MetaAudienceNetworkAdapterConfiguration: NSObject {
+@objc public class MetaAudienceNetworkAdapterConfiguration: NSObject, PartnerAdapterConfiguration {
 
     /// The version of the partner SDK.
     @objc public static var partnerSDKVersion: String {
@@ -26,13 +26,11 @@ import os.log
     /// The human-friendly partner name.
     @objc public static let partnerDisplayName = "Meta Audience Network"
 
-    private static let log = OSLog(subsystem: "com.chartboost.mediation.adapter.facebook", category: "Configuration")
-
     /// Optional list of placement IDs to pass into Meta Audience Network's initialization settings.
     /// Empty by default.
     @objc public static var placementIDs: [String] = [] {
         didSet {
-            os_log(.debug, log: log, "Meta Audience Network SDK placement IDs set to %{public}s", "\(placementIDs)")
+            log("Placement IDs set to \(placementIDs)")
         }
     }
 
@@ -45,9 +43,7 @@ import os.log
             } else {
                 FBAdSettings.clearTestDevices()
             }
-            if #available(iOS 12.0, *) {
-                os_log(.debug, log: log, "Meta Audience Network SDK test mode set to %{public}s", "\(testMode)")
-            }
+            log("Test mode set to \(testMode)")
         }
     }
     
@@ -56,9 +52,7 @@ import os.log
     @objc public static var verboseLogging: Bool = false {
         didSet {
             FBAdSettings.setLogLevel(verboseLogging ? .verbose : .log)
-            if #available(iOS 12.0, *) {
-                os_log(.debug, log: log, "Meta Audience Network SDK verbose logging set to %{public}s", "\(verboseLogging)")
-            }
+            log("Verbose logging set to \(verboseLogging)")
         }
     }
 }
