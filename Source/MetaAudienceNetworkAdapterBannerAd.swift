@@ -34,7 +34,8 @@ final class MetaAudienceNetworkAdapterBannerAd: MetaAudienceNetworkAdapterAd, Pa
         // Fail if we cannot fit a fixed size banner in the requested size.
         guard 
             let requestedSize = request.bannerSize,
-            let fittingSize = BannerSize.largestStandardFixedSizeThatFits(in: requestedSize)
+            let fittingSize = BannerSize.largestStandardFixedSizeThatFits(in: requestedSize),
+            let fbSize = fittingSize.fbAdSize
         else {
             let error = error(.loadFailureInvalidBannerSize)
             log(.loadFailed(error))
@@ -46,12 +47,12 @@ final class MetaAudienceNetworkAdapterBannerAd: MetaAudienceNetworkAdapterAd, Pa
 
         let ad = FBAdView(
             placementID: request.partnerPlacement,
-            adSize: fittingSize.fbAdSize,
+            adSize: fbSize,
             rootViewController: viewController
         )
         self.ad = ad
         ad.delegate = self
-        ad.frame = CGRect(origin: .zero, size: fittingSize.fbAdSize.size)
+        ad.frame = CGRect(origin: .zero, size: fbSize.size)
         DispatchQueue.main.async {
             ad.loadAd(withBidPayload: bidPayload)
         }
@@ -86,7 +87,7 @@ extension MetaAudienceNetworkAdapterBannerAd: FBAdViewDelegate {
 }
 
 extension BannerSize {
-    fileprivate var fbAdSize: FBAdSize {
+    fileprivate var fbAdSize: FBAdSize? {
         switch self {
         case .standard:
             kFBAdSizeHeight50Banner
@@ -95,7 +96,7 @@ extension BannerSize {
         case .leaderboard:
             kFBAdSizeHeight90Banner
         default:
-            kFBAdSizeHeight50Banner
+            nil
         }
     }
 }
