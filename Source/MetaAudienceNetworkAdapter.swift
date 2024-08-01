@@ -12,133 +12,128 @@ import UIKit
 
 /// The Chartboost Mediation Meta Audience Network adapter.
 final class MetaAudienceNetworkAdapter: PartnerAdapter {
-    
-    /// The version of the partner SDK.
-    let partnerSDKVersion = FB_AD_SDK_VERSION
-    
-    /// The version of the adapter.
-    /// It should have either 5 or 6 digits separated by periods, where the first digit is Chartboost Mediation SDK's major version, the last digit is the adapter's build version, and intermediate digits are the partner SDK's version.
-    /// Format: `<Chartboost Mediation major version>.<Partner major version>.<Partner minor version>.<Partner patch version>.<Partner build version>.<Adapter build version>` where `.<Partner build version>` is optional.
-    let adapterVersion = "4.6.15.0.0"
-    
-    /// The partner's unique identifier.
-    let partnerIdentifier = "facebook"
-    
-    /// The human-friendly partner name.
-    let partnerDisplayName = "Meta Audience Network"
-    
+    /// The adapter configuration type that contains adapter and partner info.
+    /// It may also be used to expose custom partner SDK options to the publisher.
+    var configuration: PartnerAdapterConfiguration.Type { MetaAudienceNetworkAdapterConfiguration.self }
+
     /// The designated initializer for the adapter.
     /// Chartboost Mediation SDK will use this constructor to create instances of conforming types.
     /// - parameter storage: An object that exposes storage managed by the Chartboost Mediation SDK to the adapter.
     /// It includes a list of created `PartnerAd` instances. You may ignore this parameter if you don't need it.
     init(storage: PartnerAdapterStorage) {}
-    
+
     /// Does any setup needed before beginning to load ads.
     /// - parameter configuration: Configuration data for the adapter to set up.
-    /// - parameter completion: Closure to be performed by the adapter when it's done setting up. It should include an error indicating the cause for failure or `nil` if the operation finished successfully.
-    func setUp(with configuration: PartnerConfiguration, completion: @escaping (Error?) -> Void) {
+    /// - parameter completion: Closure to be performed by the adapter when it's done setting up. It should include an error indicating 
+    /// the cause for failure or `nil` if the operation finished successfully.
+    func setUp(with configuration: PartnerConfiguration, completion: @escaping (Result<PartnerDetails, Error>) -> Void) {
         log(.setUpStarted)
-        
+
         // Apply App Tracking Transparency setting
         // Documentation at: https://developers.facebook.com/docs/app-events/guides/advertising-tracking-enabled
         let isTrackingEnabled: Bool
         if #available(iOS 14, *) {
             // ATT only available in iOS 14+
             isTrackingEnabled = ATTrackingManager.trackingAuthorizationStatus == .authorized
-        }
-        else {
+        } else {
             isTrackingEnabled = ASIdentifierManager.shared().isAdvertisingTrackingEnabled
         }
         FBAdSettings.setAdvertiserTrackingEnabled(isTrackingEnabled)
         log(.privacyUpdated(setting: "advertiserTrackingEnabled", value: isTrackingEnabled))
-        
-        let settings = FBAdInitSettings(placementIDs: [], mediationService: "Chartboost")
-        
+
+        // Apply initial consents
+        setConsents(configuration.consents, modifiedKeys: Set(configuration.consents.keys))
+        setIsUserUnderage(configuration.isUserUnderage)
+
+        let settings = FBAdInitSettings(
+            placementIDs: MetaAudienceNetworkAdapterConfiguration.placementIDs,
+            mediationService: "Chartboost"
+        )
+
         FBAudienceNetworkAds.initialize(with: settings) { result in
-            if (result.isSuccess) {
+            if result.isSuccess {
                 self.log(.setUpSucceded)
-                completion(nil)
+                completion(.success([:]))
             } else {
                 let error = self.error(.initializationFailureUnknown, description: result.message)
                 self.log(.setUpFailed(error))
-                
-                completion(error)
+                completion(.failure(error))
             }
         }
     }
-    
+
     /// Fetches bidding tokens needed for the partner to participate in an auction.
     /// - parameter request: Information about the ad load request.
     /// - parameter completion: Closure to be performed with the fetched info.
-    func fetchBidderInformation(request: PreBidRequest, completion: @escaping ([String : String]?) -> Void) {
+    func fetchBidderInformation(request: PartnerAdPreBidRequest, completion: @escaping (Result<[String: String], Error>) -> Void) {
         log(.fetchBidderInfoStarted(request))
-        
         let bidderToken = FBAdSettings.bidderToken
-        if bidderToken.isEmpty {
-            log(.fetchBidderInfoFailed(request, error: error(.prebidFailureUnknown)))
-        } else {
-            log(.fetchBidderInfoSucceeded(request))
+        log(.fetchBidderInfoSucceeded(request))
+        completion(.success(bidderToken.isEmpty ? [:] : ["buyeruid": bidderToken]))
+    }
+
+    /// Indicates that the user consent has changed.
+    /// - parameter consents: The new consents value, including both modified and unmodified consents.
+    /// - parameter modifiedKeys: A set containing all the keys that changed.
+    func setConsents(_ consents: [ConsentKey: ConsentValue], modifiedKeys: Set<ConsentKey>) {
+        if modifiedKeys.contains(ConsentKeys.ccpaOptIn) {
+            // If CCPA consent has been given, send an empty Array. Otherwise, the Array must contain the String "LDU".
+            // By setting country and state to values of 0, this instructs Meta Audience Network to perform the geolocation themselves.
+            // See https://developers.facebook.com/docs/audience-network/optimization/best-practices/ccpa
+            let hasGivenConsent = consents[ConsentKeys.ccpaOptIn] == ConsentValues.granted
+            let dataProcessingOptions = hasGivenConsent ? [] : [String.limitedDataUsage]
+            FBAdSettings.setDataProcessingOptions(dataProcessingOptions, country: 0, state: 0)
+            log(.privacyUpdated(setting: "dataProcessingOptions", value: dataProcessingOptions))
         }
-        completion(["buyeruid": bidderToken])
+        // Meta Audience Network automatically handles GDPR.
     }
-    
-    /// Indicates if GDPR applies or not and the user's GDPR consent status.
-    /// - parameter applies: `true` if GDPR applies, `false` if not, `nil` if the publisher has not provided this information.
-    /// - parameter status: One of the `GDPRConsentStatus` values depending on the user's preference.
-    func setGDPR(applies: Bool?, status: GDPRConsentStatus) {
-        /// NO-OP. Meta Audience Network automatically handles GDPR.
-    }
-    
-    /// Indicates if the user is subject to COPPA or not.
-    /// - parameter isChildDirected: `true` if the user is subject to COPPA, `false` otherwise.
-    func setCOPPA(isChildDirected: Bool) {
+
+    /// Indicates that the user is underage signal has changed.
+    /// - parameter isUserUnderage: `true` if the user is underage as determined by the publisher, `false` otherwise.
+    func setIsUserUnderage(_ isUserUnderage: Bool) {
         // See https://developers.facebook.com/docs/audience-network/optimization/best-practices/coppa
-        FBAdSettings.isMixedAudience = isChildDirected
-        log(.privacyUpdated(setting: "isMixedAudience", value: isChildDirected))
+        FBAdSettings.isMixedAudience = isUserUnderage
+        log(.privacyUpdated(setting: "isMixedAudience", value: isUserUnderage))
     }
-    
-    /// Indicates the CCPA status both as a boolean and as an IAB US privacy string.
-    /// - parameter hasGivenConsent: A boolean indicating if the user has given consent.
-    /// - parameter privacyString: An IAB-compliant string indicating the CCPA status.
-    func setCCPA(hasGivenConsent: Bool, privacyString: String) {
-        /// If CCPA consent has been given, send an empty Array. Otherwise, the Array must contain the String "LDU".
-        /// By setting country and state to values of 0, this instructs Meta Audience Network  to perform the geolocation themselves.
-        /// See https://developers.facebook.com/docs/audience-network/optimization/best-practices/ccpa
-        let dataProcessingOptions = hasGivenConsent ? [] : [String.limitedDataUsage]
-        FBAdSettings.setDataProcessingOptions(dataProcessingOptions, country: 0, state: 0)
-        log(.privacyUpdated(setting: "dataProcessingOptions", value: dataProcessingOptions))
+
+    /// Creates a new banner ad object in charge of communicating with a single partner SDK ad instance.
+    /// Chartboost Mediation SDK calls this method to create a new ad for each new load request. Ad instances are never reused.
+    /// Chartboost Mediation SDK takes care of storing and disposing of ad instances so you don't need to.
+    /// ``PartnerAd/invalidate()`` is called on ads before disposing of them in case partners need to perform any custom logic before the
+    /// object gets destroyed.
+    /// If, for some reason, a new ad cannot be provided, an error should be thrown.
+    /// Chartboost Mediation SDK will always call this method from the main thread.
+    /// - parameter request: Information about the ad load request.
+    /// - parameter delegate: The delegate that will receive ad life-cycle notifications.
+    func makeBannerAd(request: PartnerAdLoadRequest, delegate: PartnerAdDelegate) throws -> PartnerBannerAd {
+        // This partner supports multiple loads for the same partner placement.
+        MetaAudienceNetworkAdapterBannerAd(adapter: self, request: request, delegate: delegate)
     }
-    
+
     /// Creates a new ad object in charge of communicating with a single partner SDK ad instance.
     /// Chartboost Mediation SDK calls this method to create a new ad for each new load request. Ad instances are never reused.
     /// Chartboost Mediation SDK takes care of storing and disposing of ad instances so you don't need to.
-    /// `invalidate()` is called on ads before disposing of them in case partners need to perform any custom logic before the object gets destroyed.
+    /// ``PartnerAd/invalidate()`` is called on ads before disposing of them in case partners need to perform any custom logic before the
+    /// object gets destroyed.
     /// If, for some reason, a new ad cannot be provided, an error should be thrown.
     /// - parameter request: Information about the ad load request.
     /// - parameter delegate: The delegate that will receive ad life-cycle notifications.
-    func makeAd(request: PartnerAdLoadRequest, delegate: PartnerAdDelegate) throws -> PartnerAd {
+    func makeFullscreenAd(request: PartnerAdLoadRequest, delegate: PartnerAdDelegate) throws -> PartnerFullscreenAd {
         // This partner supports multiple loads for the same partner placement.
         switch request.format {
-        case .interstitial:
+        case PartnerAdFormats.interstitial:
             return MetaAudienceNetworkAdapterInterstitialAd(adapter: self, request: request, delegate: delegate)
-        case .rewarded:
+        case PartnerAdFormats.rewarded:
             return MetaAudienceNetworkAdapterRewardedAd(adapter: self, request: request, delegate: delegate)
-        case .banner:
-            return MetaAudienceNetworkAdapterBannerAd(adapter: self, request: request, delegate: delegate)
+        case PartnerAdFormats.rewardedInterstitial:
+            return MetaAudienceNetworkAdapterRewardedInterstitialAd(adapter: self, request: request, delegate: delegate)
         default:
-            // Not using the `.rewardedInterstitial` or `.adaptiveBanner` cases directly to maintain backward compatibility with Chartboost Mediation 4.0
-            if request.format.rawValue == "rewarded_interstitial" {
-                return MetaAudienceNetworkAdapterRewardedInterstitialAd(adapter: self, request: request, delegate: delegate)
-            } else if request.format.rawValue == "adaptive_banner" {
-                return MetaAudienceNetworkAdapterBannerAd(adapter: self, request: request, delegate: delegate)
-            } else {
-                throw error(.loadFailureUnsupportedAdFormat)
-            }
+            throw error(.loadFailureUnsupportedAdFormat)
         }
     }
 }
 
-private extension String {
+extension String {
     /// CCPA signal representing limited data usage in the case consent has not been given.
-    static let limitedDataUsage = "LDU"
+    fileprivate static let limitedDataUsage = "LDU"
 }
