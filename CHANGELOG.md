@@ -11,8 +11,8 @@ All official releases can be found on this repository's [releases page](https://
 
 ## Mediation 5
 
-### 5.6.17.0.0
-- This version of the adapter has been certified with FBAudienceNetwork 6.17.0.
+### 5.6.20.0.0
+- This version of the adapter has been certified with FBAudienceNetwork 6.20.0.
 
 ### 5.6.16.0.0
 - This version of the adapter has been certified with FBAudienceNetwork 6.16.0.
