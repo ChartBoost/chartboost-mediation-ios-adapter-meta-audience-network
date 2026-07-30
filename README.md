@@ -8,7 +8,7 @@ The Chartboost Mediation Meta Audience Network adapter mediates Meta Audience Ne
 | ------ | ------ |
 | Chartboost Mediation SDK | 5.0.0+ |
 | Cocoapods | 1.11.3+ |
-| iOS | 13.0+ |
+| iOS | 15.0+ |
 | Xcode | 15.0+ |
 
 ## Integration
